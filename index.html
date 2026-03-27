@@ -200,6 +200,43 @@ button,input[type="text"]{min-height:44px}
   .card{padding:1.1rem .95rem}
   .answer-buttons .btn{font-size:.78rem;padding:.6rem .35rem}
 }
+
+/* ═══ GRAMMAR MENU BUTTON (mobile only) ═══ */
+.btn-grammar{display:none;background:rgba(255,255,255,.18);border:none;border-radius:20px;padding:5px 13px;font-size:.82rem;font-weight:700;color:white;cursor:pointer;white-space:nowrap}
+.btn-grammar:active{background:rgba(255,255,255,.3)}
+@media(max-width:639px){.btn-grammar{display:block}}
+
+/* ═══ GRAMMAR BOTTOM SHEET ═══ */
+.grammar-menu-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:900;align-items:flex-end;backdrop-filter:blur(2px)}
+.grammar-menu-overlay.open{display:flex}
+.grammar-menu-sheet{background:white;border-radius:20px 20px 0 0;width:100%;padding:1.25rem 1.25rem calc(1.25rem + env(safe-area-inset-bottom));max-height:60vh;overflow-y:auto}
+.grammar-menu-title{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#64748b;margin-bottom:.85rem}
+.grammar-menu-btns{display:grid;grid-template-columns:1fr 1fr;gap:.5rem}
+.grammar-menu-btn{padding:.75rem 1rem;background:#f1f5f9;border:none;border-radius:11px;font-size:.9rem;font-weight:600;color:#1e293b;cursor:pointer;text-align:left;transition:background .14s}
+.grammar-menu-btn:active{background:#e2e8f0}
+.grammar-menu-close{width:100%;padding:.7rem;background:none;border:1px solid #dde3ec;border-radius:11px;font-size:.9rem;font-weight:600;color:#64748b;cursor:pointer;margin-top:.65rem}
+
+/* ═══ COLLAPSIBLE GRAMMAR NOTE ═══ */
+.note-toggle{display:none;width:100%;padding:.6rem .9rem;background:#f0f6ff;border:none;border-radius:10px;font-size:.88rem;font-weight:600;color:#006AA7;cursor:pointer;text-align:left;transition:background .14s}
+.note-toggle:active{background:#dbeafe}
+@media(max-width:639px){
+  .note-toggle{display:block}
+  .note-block{display:none!important}
+  .note-block.open{display:block!important}
+}
+
+/* ═══ MOBILE FULL-VIEWPORT LAYOUT ═══ */
+@media(max-width:639px){
+  html{height:100svh}
+  body{height:100svh;overflow:hidden;display:flex;flex-direction:column}
+  .filter-bar{display:none}
+  .progress-area{margin:.4rem .85rem 0;padding:0;max-width:700px;width:100%;align-self:center}
+  .stats-row{display:none}
+  .card-area{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;margin:.35rem auto 0;padding:0 .85rem;width:100%;max-width:700px}
+  .card{min-height:0}
+  .session-end{padding:0 .85rem;margin:.5rem auto;flex:1;overflow-y:auto;width:100%;max-width:700px}
+  .controls{margin:0 auto;padding:.35rem .85rem calc(.5rem + env(safe-area-inset-bottom));width:100%;max-width:700px}
+}
 </style>
 </head>
 <body>
@@ -207,6 +244,7 @@ button,input[type="text"]{min-height:44px}
 <header>
   <h1>🇸🇪 Swedish Flashcards <span style="font-weight:300;opacity:.7;font-size:.9rem">B1/B2</span></h1>
   <div class="streak-badge zero" id="streak-badge" title="Practice every day to build your streak!">🔥 <span id="streak-num">0</span> day streak</div>
+  <button class="btn-grammar" onclick="openGrammarMenu()">📚 Grammar</button>
   <div class="mode-toggle">
     <button class="mode-btn active" id="btn-en-sv" onclick="setMode('en-sv')">EN → SV</button>
   </div>
@@ -283,7 +321,8 @@ button,input[type="text"]{min-height:44px}
         </div>
       </div>
       <div class="divider"></div>
-      <div class="note-block">
+      <button class="note-toggle" id="note-toggle" onclick="toggleNote()">📝 Grammar note ▼</button>
+      <div class="note-block" id="note-block">
         <div class="note-label">📝 Grammar note</div>
         <div class="note-text" id="note-text"></div>
       </div>
@@ -1105,6 +1144,9 @@ function renderCard() {
   document.getElementById('input-section').style.display = 'block';
   document.getElementById('reveal-section').style.display = 'none';
   document.getElementById('answer-buttons').style.display = 'none';
+  // Reset note toggle
+  document.getElementById('note-block').classList.remove('open');
+  document.getElementById('note-toggle').textContent = '📝 Grammar note ▼';
   // Reset speech UI
   document.getElementById('listening-bar').classList.remove('active');
   if (isListening && recognition) { recognition.stop(); isListening = false; }
@@ -1632,17 +1674,34 @@ function closeReview() {
 // ═══════════════════════════════════════════
 //  SPEECH RECOGNITION
 // ═══════════════════════════════════════════
-const SpeechRec = window.webkitSpeechRecognition || window.SpeechRecognition || null;
+const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition || null;
 let recognition = null;
 let isListening = false;
 
 function initSpeech() {
-  const micBtn = document.getElementById('mic-btn');
   if (!SpeechRec) {
-    // Browser doesn't support it — hide mic, show message
-    micBtn.classList.add('no-support');
+    document.getElementById('mic-btn').classList.add('no-support');
+  }
+}
+
+function toggleMic() {
+  if (!SpeechRec) {
+    const el = document.getElementById('speech-unsupported');
+    el.style.display = 'block';
+    setTimeout(function() { el.style.display = 'none'; }, 4000);
     return;
   }
+  if (revealed) return;
+
+  if (isListening) {
+    if (recognition) recognition.abort();
+    isListening = false;
+    document.getElementById('mic-btn').classList.remove('listening');
+    document.getElementById('listening-bar').classList.remove('active');
+    return;
+  }
+
+  // Create a fresh instance each time — required for iOS Safari
   recognition = new SpeechRec();
   recognition.continuous = false;
   recognition.interimResults = true;
@@ -1661,13 +1720,10 @@ function initSpeech() {
   recognition.onend = function() {
     isListening = false;
     document.getElementById('mic-btn').classList.remove('listening');
-    // If we got text, auto-check after a short delay
     const inp = document.getElementById('answer-input');
     if (inp.value.trim() && !revealed) {
       setTimeout(function() {
-        // Keep the listening bar visible briefly so user sees what was heard
         checkAnswer();
-        // Hide listening bar after showing result
         setTimeout(function() {
           document.getElementById('listening-bar').classList.remove('active');
         }, 1500);
@@ -1699,27 +1755,7 @@ function initSpeech() {
       document.getElementById('listening-bar').classList.remove('active');
     }
   };
-}
 
-function toggleMic() {
-  if (!recognition) {
-    // Show unsupported message briefly
-    const el = document.getElementById('speech-unsupported');
-    el.style.display = 'block';
-    setTimeout(function() { el.style.display = 'none'; }, 4000);
-    return;
-  }
-  if (revealed) return; // Don't listen after answer is shown
-
-  if (isListening) {
-    recognition.stop();
-    isListening = false;
-    document.getElementById('mic-btn').classList.remove('listening');
-    document.getElementById('listening-bar').classList.remove('active');
-    return;
-  }
-
-  // Start listening
   isListening = true;
   document.getElementById('mic-btn').classList.add('listening');
   document.getElementById('listening-bar').classList.add('active');
@@ -1729,12 +1765,30 @@ function toggleMic() {
   try {
     recognition.start();
   } catch(e) {
-    // Already started — stop and restart
-    recognition.stop();
-    setTimeout(function() {
-      try { recognition.start(); } catch(e2) { /* give up */ }
-    }, 200);
+    isListening = false;
+    document.getElementById('mic-btn').classList.remove('listening');
+    document.getElementById('listening-bar').classList.remove('active');
   }
+}
+
+// ═══════════════════════════════════════════
+//  GRAMMAR NOTE TOGGLE
+// ═══════════════════════════════════════════
+function toggleNote() {
+  const nb = document.getElementById('note-block');
+  const btn = document.getElementById('note-toggle');
+  const open = nb.classList.toggle('open');
+  btn.textContent = open ? '📝 Grammar note ▲' : '📝 Grammar note ▼';
+}
+
+// ═══════════════════════════════════════════
+//  GRAMMAR MENU
+// ═══════════════════════════════════════════
+function openGrammarMenu() {
+  document.getElementById('grammar-menu-overlay').classList.add('open');
+}
+function closeGrammarMenu() {
+  document.getElementById('grammar-menu-overlay').classList.remove('open');
 }
 
 // Init speech on page load
@@ -1744,6 +1798,24 @@ initSpeech();
 
 <!-- Review overlay -->
 <div class="review-overlay" id="review-overlay" onclick="if(event.target===this)closeReview()"></div>
+
+<!-- Grammar menu bottom sheet -->
+<div class="grammar-menu-overlay" id="grammar-menu-overlay" onclick="if(event.target===this)closeGrammarMenu()">
+  <div class="grammar-menu-sheet">
+    <div class="grammar-menu-title">Grammar Reference</div>
+    <div class="grammar-menu-btns">
+      <button class="grammar-menu-btn" onclick="closeGrammarMenu();showReview('verb')">📖 Verbs</button>
+      <button class="grammar-menu-btn" onclick="closeGrammarMenu();showReview('prep')">📖 Prepositions</button>
+      <button class="grammar-menu-btn" onclick="closeGrammarMenu();showReview('noun')">📖 Nouns</button>
+      <button class="grammar-menu-btn" onclick="closeGrammarMenu();showReview('word')">📖 Word Order</button>
+      <button class="grammar-menu-btn" onclick="closeGrammarMenu();showReview('idiom')">📖 Phrases</button>
+      <button class="grammar-menu-btn" onclick="closeGrammarMenu();showReview('modal')">📖 Modals</button>
+      <button class="grammar-menu-btn" onclick="closeGrammarMenu();showReview('cond')">📖 Conditionals</button>
+      <button class="grammar-menu-btn" onclick="closeGrammarMenu();showReview('part')">📖 Participles</button>
+    </div>
+    <button class="grammar-menu-close" onclick="closeGrammarMenu()">Close</button>
+  </div>
+</div>
 
 </body>
 </html>
