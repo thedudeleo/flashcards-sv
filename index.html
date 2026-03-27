@@ -1,0 +1,1749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=5.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Svensk</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#eef2f7;min-height:100vh;color:#1a202c;font-size:17px}
+header{background:#006AA7;color:white;padding:1rem 1.5rem;display:flex;align-items:center;justify-content:space-between;gap:.75rem;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+header h1{font-size:1.3rem;font-weight:700;flex:1}
+.streak-badge{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.18);border-radius:20px;padding:5px 13px;font-size:.82rem;font-weight:700;color:white;white-space:nowrap}
+.streak-badge.zero{opacity:.45}
+.mode-toggle{display:flex;background:rgba(255,255,255,.18);border-radius:20px;padding:3px;gap:3px}
+.mode-btn{padding:5px 16px;border-radius:16px;border:none;cursor:pointer;font-size:.82rem;font-weight:600;transition:all .2s;background:transparent;color:rgba(255,255,255,.75)}
+.mode-btn.active{background:white;color:#006AA7}
+.filter-bar{background:white;border-bottom:1px solid #dde3ec;display:flex;flex-direction:column}
+.cat-bar,.diff-bar{display:flex;overflow-x:auto;padding:0 1rem}
+.cat-bar::-webkit-scrollbar,.diff-bar::-webkit-scrollbar{display:none}
+.filter-btn{padding:.6rem .9rem;border:none;background:transparent;cursor:pointer;font-size:.8rem;color:#64748b;border-bottom:2px solid transparent;white-space:nowrap;transition:all .18s;font-weight:500}
+.filter-btn.active{color:#006AA7;border-bottom-color:#006AA7;font-weight:700}
+.diff-bar .filter-btn{font-size:.75rem;padding:.4rem .8rem}
+.progress-area{max-width:700px;margin:1.25rem auto 0;padding:0 1.25rem}
+.progress-info{display:flex;justify-content:space-between;font-size:.85rem;color:#64748b;margin-bottom:6px}
+.progress-bar-bg{height:8px;background:#dde3ec;border-radius:4px;overflow:hidden}
+.progress-bar-fill{height:100%;background:#FECC02;border-radius:4px;transition:width .35s}
+.stats-row{display:flex;gap:.6rem;margin-top:8px;flex-wrap:wrap}
+.stat-pill{font-size:.75rem;padding:3px 10px;border-radius:10px;font-weight:600}
+.stat-pill.got-it{background:#dcfce7;color:#16a34a}
+.stat-pill.learning{background:#fef3c7;color:#b45309}
+.stat-pill.unseen{background:#f1f5f9;color:#64748b}
+.stat-pill.queue{background:#ede9fe;color:#6d28d9}
+.card-area{max-width:700px;margin:1.1rem auto 0;padding:0 1.25rem}
+.card{background:white;border-radius:18px;box-shadow:0 4px 24px rgba(0,0,0,.09);padding:1.8rem 2rem;min-height:240px;display:flex;flex-direction:column;gap:1rem}
+.card-category{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;padding:3px 11px;border-radius:10px;align-self:flex-start}
+.cat-verb{background:#fce7f3;color:#be185d}
+.cat-prep{background:#dbeafe;color:#1d4ed8}
+.cat-noun{background:#dcfce7;color:#15803d}
+.cat-word{background:#fef9c3;color:#854d0e}
+.cat-idiom{background:#fde8d8;color:#c2410c}
+.cat-modal{background:#ede9fe;color:#6d28d9}
+.cat-cond{background:#e0f2fe;color:#0369a1}
+.cat-part{background:#fdf4ff;color:#86198f}
+.diff-badge{font-size:.68rem;font-weight:600;padding:2px 8px;border-radius:8px;align-self:flex-start;margin-top:-0.5rem}
+.diff-easy{background:#f0fdf4;color:#16a34a}
+.diff-medium{background:#fff7ed;color:#c2410c}
+.diff-hard{background:#fef2f2;color:#dc2626}
+.prompt-text{font-size:1.4rem;font-weight:500;line-height:1.45;color:#1e293b}
+.input-row{display:flex;gap:.65rem;margin-top:.25rem}
+#answer-input{flex:1;padding:.75rem 1rem;border:2px solid #dde3ec;border-radius:11px;font-size:1.05rem;font-family:inherit;color:#1e293b;outline:none;transition:border-color .15s}
+#answer-input:focus{border-color:#006AA7}
+#answer-input.correct{border-color:#16a34a;background:#f0fdf4}
+#answer-input.close{border-color:#f59e0b;background:#fffbeb}
+#answer-input.wrong{border-color:#dc2626;background:#fef2f2}
+#answer-input:disabled{opacity:.7}
+.btn-check{padding:.75rem 1.4rem;background:#006AA7;color:white;border:none;border-radius:11px;font-size:.95rem;font-weight:700;cursor:pointer;white-space:nowrap;transition:all .14s}
+.btn-check:hover{background:#005a8e;transform:translateY(-1px)}
+.reveal-section{display:none;flex-direction:column;gap:1rem}
+.check-result{font-size:1rem;font-weight:700;padding:.5rem .9rem;border-radius:9px;text-align:center}
+.check-result.correct{background:#dcfce7;color:#16a34a}
+.check-result.close{background:#fef3c7;color:#b45309}
+.check-result.wrong{background:#fee2e2;color:#dc2626}
+.answer-compare{display:grid;grid-template-columns:1fr 1fr;gap:.7rem}
+.answer-box{border-radius:11px;padding:.8rem 1rem}
+.answer-box-label{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;opacity:.7}
+.answer-box-text{font-size:1rem;font-weight:500;line-height:1.4;color:#1e293b}
+.your-box{background:#f8fafc;border:1px solid #dde3ec}
+.correct-box{background:#f0fdf4;border:1px solid #bbf7d0}
+.correct-box .answer-box-label{color:#16a34a;opacity:1}
+.note-block{background:#f0f6ff;border-left:3px solid #006AA7;border-radius:0 10px 10px 0;padding:.85rem 1rem}
+.note-label{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#006AA7;margin-bottom:6px}
+.note-text{font-size:.95rem;color:#1e293b;line-height:1.6}
+.divider{height:1px;background:#e2e8f0}
+.controls{max-width:700px;margin:.8rem auto 2rem;padding:0 1.25rem;display:flex;flex-direction:column;gap:.65rem}
+.answer-buttons{display:flex;gap:.65rem}
+.btn{flex:1;padding:.75rem 1rem;border:none;border-radius:11px;font-size:.92rem;font-weight:600;cursor:pointer;transition:all .14s;display:flex;align-items:center;justify-content:center;gap:.35rem}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.btn-again{background:#dc2626;color:white}
+.btn-again:hover:not(:disabled){background:#b91c1c;transform:translateY(-1px)}
+.btn-hard{background:#f59e0b;color:white}
+.btn-hard:hover:not(:disabled){background:#d97706;transform:translateY(-1px)}
+.btn-good{background:#16a34a;color:white}
+.btn-good:hover:not(:disabled){background:#15803d;transform:translateY(-1px)}
+.btn-easy{background:#2563eb;color:white}
+.btn-easy:hover:not(:disabled){background:#1d4ed8;transform:translateY(-1px)}
+.btn-ivl{font-size:.72rem;opacity:.85;font-weight:400;margin-left:2px}
+.nav-row{display:flex;gap:.65rem}
+.btn-secondary{background:white;color:#475569;border:1px solid #dde3ec}
+.btn-secondary:hover:not(:disabled){background:#f8fafc}
+.btn-shuffle{background:#006AA7;color:white}
+.btn-shuffle:hover{background:#005a8e;transform:translateY(-1px)}
+.btn-export{background:white;color:#475569;border:1px solid #dde3ec;font-size:.82rem}
+.btn-export:hover{background:#f8fafc}
+.kbd-hint{text-align:center;font-size:.75rem;color:#94a3b8;margin-top:.1rem}
+kbd{background:#f1f5f9;border:1px solid #dde3ec;border-radius:4px;padding:1px 5px;font-family:inherit;font-size:.72rem;color:#475569}
+/* Session complete screen */
+.session-end{display:none;max-width:700px;margin:1.5rem auto;padding:0 1.25rem}
+.session-end-inner{background:white;border-radius:18px;box-shadow:0 4px 24px rgba(0,0,0,.09);padding:2rem;text-align:center}
+.session-end-inner h2{font-size:1.5rem;margin-bottom:.5rem}
+.session-end-inner p{color:#64748b;margin-bottom:1.5rem}
+.next-due-list{text-align:left;background:#f8fafc;border-radius:10px;padding:1rem;margin-bottom:1.5rem;font-size:.9rem;color:#334155;line-height:1.8}
+.session-end-btns{display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap}
+.session-end-btns .btn{flex:none;padding:.7rem 1.4rem}
+/* Review overlay */
+.review-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;justify-content:center;align-items:flex-start;padding:2rem 1rem;overflow-y:auto;backdrop-filter:blur(3px)}
+.review-overlay-inner{background:white;border-radius:18px;max-width:600px;width:100%;padding:2rem;position:relative;box-shadow:0 12px 48px rgba(0,0,0,.2);animation:reviewIn .2s ease-out}
+@keyframes reviewIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.review-close{position:absolute;top:12px;right:14px;background:none;border:none;font-size:1.6rem;color:#94a3b8;cursor:pointer;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.review-close:hover{background:#f1f5f9;color:#1e293b}
+.review-title{margin-bottom:1.2rem;display:flex;align-items:center;gap:.5rem}
+.review-title .card-category{font-size:.85rem;padding:5px 14px}
+.review-section{margin-bottom:1.4rem}
+.review-section-label{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#006AA7;margin-bottom:.6rem}
+.review-rule{font-size:.92rem;color:#334155;line-height:1.55;margin-bottom:.5rem}
+.review-example{background:#f0f6ff;border-radius:10px;padding:.7rem .9rem;margin-bottom:.5rem}
+.review-ex-sv{font-size:1rem;font-weight:600;color:#1e293b}
+.review-ex-en{font-size:.88rem;color:#64748b;margin-top:2px}
+.review-ex-note{font-size:.82rem;color:#006AA7;margin-top:4px;font-style:italic}
+.review-card{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:.65rem .9rem;margin-bottom:.45rem;display:flex;justify-content:space-between;align-items:center;gap:.75rem}
+.review-card-sv{font-weight:600;color:#1e293b;font-size:.95rem}
+.review-card-en{color:#64748b;font-size:.88rem;text-align:right}
+
+/* ═══ MIC BUTTON & SPEECH ═══ */
+.btn-mic{padding:.75rem;background:white;color:#006AA7;border:2px solid #dde3ec;border-radius:11px;font-size:1.15rem;cursor:pointer;white-space:nowrap;transition:all .14s;min-width:48px;min-height:48px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.btn-mic:hover:not(:disabled){border-color:#006AA7;background:#f0f6ff}
+.btn-mic.listening{border-color:#dc2626;background:#fef2f2;animation:micPulse 1.2s infinite}
+.btn-mic:disabled{opacity:.35;cursor:not-allowed}
+.btn-mic.no-support{display:none}
+@keyframes micPulse{0%{box-shadow:0 0 0 0 rgba(220,38,38,.6)}50%{box-shadow:0 0 0 10px rgba(220,38,38,0)}100%{box-shadow:0 0 0 0 rgba(220,38,38,0)}}
+.listening-bar{display:none;align-items:center;gap:.5rem;padding:.6rem .9rem;background:#fee2e2;border-radius:10px;margin-top:.5rem;font-size:.9rem;color:#991b1b}
+.listening-bar.active{display:flex}
+.listening-dot{width:8px;height:8px;background:#dc2626;border-radius:50%;animation:blink 1s infinite;flex-shrink:0}
+@keyframes blink{0%,49%,100%{opacity:1}50%,99%{opacity:.3}}
+.recognized-text{font-weight:600;flex:1;word-wrap:break-word}
+.speech-unsupported{display:none;padding:.6rem .9rem;background:#fef3c7;border-radius:10px;margin-top:.5rem;font-size:.85rem;color:#92400e}
+
+/* ═══ MOBILE RESPONSIVE ═══ */
+/* Minimum touch targets */
+button,input[type="text"]{min-height:44px}
+.answer-buttons .btn{min-height:48px}
+
+/* Safe area for notched phones */
+@supports(padding:max(0px)){
+  header{padding-left:max(1rem,env(safe-area-inset-left));padding-right:max(1rem,env(safe-area-inset-right))}
+  body{padding-bottom:env(safe-area-inset-bottom)}
+}
+
+/* Prevent iOS zoom on input focus */
+@supports(-webkit-touch-callout:none){
+  input[type="text"],select,textarea{font-size:16px!important}
+}
+
+@media(max-width:639px){
+  body{font-size:16px}
+  header{padding:.75rem 1rem;flex-wrap:wrap;gap:.5rem}
+  header h1{font-size:1.1rem;flex-basis:100%}
+  .streak-badge{font-size:.72rem;padding:4px 10px}
+  .mode-toggle{margin-left:auto}
+  .mode-btn{padding:5px 12px;font-size:.78rem}
+  .cat-bar{padding:0 .5rem;gap:0}
+  .filter-btn{padding:.5rem .65rem;font-size:.72rem}
+  .progress-area{padding:0 .85rem;margin-top:.85rem}
+  .progress-info{font-size:.8rem}
+  .stats-row{gap:.4rem}
+  .stat-pill{font-size:.7rem;padding:2px 8px}
+  .card-area{padding:0 .85rem;margin-top:.7rem}
+  .card{padding:1.3rem 1.1rem;min-height:auto;gap:.85rem;border-radius:14px}
+  .prompt-text{font-size:1.15rem}
+  .input-row{gap:.45rem}
+  #answer-input{padding:.7rem .85rem;font-size:1rem;border-radius:10px}
+  .btn-check{padding:.7rem 1rem;font-size:.88rem;border-radius:10px}
+  .btn-mic{padding:.65rem;min-width:44px;min-height:44px;border-radius:10px;font-size:1rem}
+  .answer-compare{grid-template-columns:1fr;gap:.5rem}
+  .controls{padding:0 .85rem;margin:.6rem auto 1.5rem;gap:.55rem}
+  .answer-buttons{gap:.4rem;flex-wrap:wrap}
+  .answer-buttons .btn{font-size:.82rem;padding:.65rem .5rem;border-radius:10px;flex:1 1 calc(50% - .2rem);min-width:0}
+  .btn-ivl{font-size:.65rem}
+  .nav-row{gap:.45rem}
+  .btn-secondary{font-size:.85rem}
+  .kbd-hint{display:none}
+  .session-end{padding:0 .85rem;margin:1rem auto}
+  .session-end-inner{padding:1.4rem;border-radius:14px}
+  .session-end-inner h2{font-size:1.25rem}
+  .session-end-btns{flex-direction:column;gap:.5rem}
+  .session-end-btns .btn{width:100%;padding:.75rem 1rem}
+  .note-block{padding:.7rem .85rem}
+  .note-text{font-size:.88rem}
+  .review-overlay{padding:1rem .65rem}
+  .review-overlay-inner{padding:1.3rem;border-radius:14px}
+  .review-close{width:44px;height:44px;top:8px;right:8px}
+  .review-section-label{font-size:.7rem}
+  .review-rule{font-size:.88rem}
+}
+
+@media(max-width:374px){
+  header h1{font-size:1rem}
+  .prompt-text{font-size:1.05rem}
+  .card{padding:1.1rem .95rem}
+  .answer-buttons .btn{font-size:.78rem;padding:.6rem .35rem}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🇸🇪 Swedish Flashcards <span style="font-weight:300;opacity:.7;font-size:.9rem">B1/B2</span></h1>
+  <div class="streak-badge zero" id="streak-badge" title="Practice every day to build your streak!">🔥 <span id="streak-num">0</span> day streak</div>
+  <div class="mode-toggle">
+    <button class="mode-btn active" id="btn-en-sv" onclick="setMode('en-sv')">EN → SV</button>
+  </div>
+</header>
+
+<div class="filter-bar">
+  <div class="cat-bar" id="cat-bar">
+    <button class="filter-btn" data-cat="verb" onclick="showReview('verb')">📖 Verbs</button>
+    <button class="filter-btn" data-cat="prep" onclick="showReview('prep')">📖 Prepositions</button>
+    <button class="filter-btn" data-cat="noun" onclick="showReview('noun')">📖 Nouns</button>
+    <button class="filter-btn" data-cat="word" onclick="showReview('word')">📖 Word Order</button>
+    <button class="filter-btn" data-cat="idiom" onclick="showReview('idiom')">📖 Phrases</button>
+    <button class="filter-btn" data-cat="modal" onclick="showReview('modal')">📖 Modals</button>
+    <button class="filter-btn" data-cat="cond" onclick="showReview('cond')">📖 Conditionals</button>
+    <button class="filter-btn" data-cat="part" onclick="showReview('part')">📖 Participles</button>
+  </div>
+</div>
+
+<div class="progress-area">
+  <div class="progress-info">
+    <span id="card-counter">Card 1 of 60</span>
+    <span id="queue-info">Queue: 0 due + 0 new</span>
+  </div>
+  <div class="progress-bar-bg"><div class="progress-bar-fill" id="progress-fill" style="width:0%"></div></div>
+  <div class="stats-row">
+    <span class="stat-pill got-it" id="stat-got">✓ 0 mastered</span>
+    <span class="stat-pill learning" id="stat-learn">↻ 0 learning</span>
+    <span class="stat-pill unseen" id="stat-new">◯ 0 new</span>
+  </div>
+</div>
+
+<div class="session-end" id="session-end">
+  <div class="session-end-inner">
+    <h2 id="end-title">🎉 Session complete!</h2>
+    <p id="end-subtitle">You reviewed <strong id="end-count">0</strong> cards this session.</p>
+    <div class="next-due-list" id="next-due-list"></div>
+    <div class="session-end-btns">
+      <button class="btn btn-shuffle" onclick="continueAnyway()">Continue anyway →</button>
+      <button class="btn btn-secondary" onclick="exportProgress()">⬇ Export progress</button>
+    </div>
+  </div>
+</div>
+
+<div class="card-area" id="card-area">
+  <div class="card" id="main-card">
+    <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+      <span class="card-category" id="cat-badge"></span>
+      <span class="diff-badge" id="diff-badge"></span>
+    </div>
+    <div class="prompt-text" id="prompt-text"></div>
+    <div id="input-section">
+      <div class="input-row">
+        <input type="text" id="answer-input" placeholder="Type or tap 🎤"
+          autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" inputmode="text"/>
+        <button class="btn-mic" id="mic-btn" onclick="toggleMic()" aria-label="Speak your answer">🎤</button>
+        <button class="btn-check" onclick="checkAnswer()">Check →</button>
+      </div>
+      <div class="listening-bar" id="listening-bar">
+        <span class="listening-dot"></span>
+        <span class="recognized-text" id="recognized-text">Listening...</span>
+      </div>
+      <div class="speech-unsupported" id="speech-unsupported">🎤 Speech recognition is not available in this browser. Try Chrome or Safari.</div>
+    </div>
+    <div class="reveal-section" id="reveal-section">
+      <div class="check-result" id="check-result"></div>
+      <div class="answer-compare">
+        <div class="answer-box your-box">
+          <div class="answer-box-label">Your answer</div>
+          <div class="answer-box-text" id="your-answer"></div>
+        </div>
+        <div class="answer-box correct-box">
+          <div class="answer-box-label">✓ Correct answer</div>
+          <div class="answer-box-text" id="correct-answer"></div>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="note-block">
+        <div class="note-label">📝 Grammar note</div>
+        <div class="note-text" id="note-text"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="controls" id="controls">
+  <div class="answer-buttons" id="answer-buttons" style="display:none">
+    <button class="btn btn-again"  id="btn-again" onclick="markCard('again')">Again <span class="btn-ivl" id="ivl-again"></span></button>
+    <button class="btn btn-hard"   id="btn-hard"  onclick="markCard('hard')">Hard <span class="btn-ivl" id="ivl-hard"></span></button>
+    <button class="btn btn-good"   id="btn-good"  onclick="markCard('good')">Good <span class="btn-ivl" id="ivl-good"></span></button>
+    <button class="btn btn-easy"   id="btn-easy"  onclick="markCard('easy')">Easy <span class="btn-ivl" id="ivl-easy"></span></button>
+  </div>
+  <div class="nav-row">
+    <button class="btn btn-secondary" id="btn-prev" onclick="prevCard()">← Prev</button>
+    <button class="btn btn-secondary" id="btn-next" onclick="nextCard()">Next →</button>
+  </div>
+  <button class="btn btn-export" onclick="exportProgress()">⬇ Export progress JSON</button>
+  <div class="kbd-hint"><kbd>Enter</kbd> check &nbsp; <kbd>1</kbd> again &nbsp; <kbd>2</kbd> hard &nbsp; <kbd>3</kbd> good &nbsp; <kbd>4</kbd> easy &nbsp; <kbd>→</kbd> next &nbsp; <kbd>←</kbd> prev</div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+//  CARD DATA
+// ═══════════════════════════════════════════
+const ALL_CARDS = [
+// ── VERB CONJUGATION ──────────────────────
+{id:1,cat:'verb',diff:'medium',sv:'Han brukade cykla till jobbet.',en:'He used to cycle to work.',note:'"Brukade" = used to (past habit only). Present "brukar" = usually does — these are different! You cannot use "brukade" for present habits.'},
+{id:2,cat:'verb',diff:'medium',sv:'Jag hann inte med mötet.',en:'I didn\'t have time for the meeting.',note:'"Hinna" is irregular: hinner → hann → hunnit. Very common — "hann du?" = did you manage? Easy to confuse with "han" (he) in speech.'},
+{id:3,cat:'verb',diff:'medium',sv:'Det stämmer att hon har rätt.',en:'It\'s true / correct that she\'s right.',note:'"Stämma" means "to be correct", "to agree", AND "to tune an instrument" — context decides. "Stämmer det?" = Is that right?'},
+{id:4,cat:'verb',diff:'medium',sv:'Hon lät ledsen på telefon.',en:'She sounded sad on the phone.',note:'"Låta" (to sound/let): låter → lät → låtit. In speech "lät" sounds almost identical to "lätt" (easy). One of those pairs you have to hear a lot.'},
+{id:5,cat:'verb',diff:'medium',sv:'Jag minns inte vad han sa.',en:'I don\'t remember what he said.',note:'"Minnas" is a deponent verb — looks passive but active in meaning. Never say "jag minnar". Also: "sa" not "sade" is common spoken past of "säga".'},
+{id:6,cat:'verb',diff:'medium',sv:'De bröt mot reglerna.',en:'They broke the rules.',note:'"Bryta mot" = to violate/break (rules or laws). "Bröt" is past of "bryta" (bryter → bröt → brutit). The preposition "mot" is essential.'},
+{id:7,cat:'verb',diff:'medium',sv:'Vi hinner nog med det.',en:'We\'ll probably have time for that.',note:'"Hinna med" = to have time for something. "Nog" here = probably — but also means "enough" in other contexts. Context always decides!'},
+{id:8,cat:'verb',diff:'medium',sv:'Han fick rätt till slut.',en:'He was proven right in the end.',note:'"Få rätt" = to be proven right. "Fick" = past of "få" (får → fick → fått). Compare: "ha rätt" = to be right right now. "Till slut" = in the end.'},
+{id:9,cat:'verb',diff:'medium',sv:'Jag visste inte om det.',en:'I didn\'t know about that.',note:'"Veta" is very irregular: vet → visste → vetat. "Vetade" is a common mistake — it doesn\'t exist! Also: "om" here = about, not "if".'},
+{id:10,cat:'verb',diff:'medium',sv:'Hon sköter sig bra.',en:'She\'s doing well / She manages well.',note:'"Sköta sig" can mean to behave, manage oneself, or be doing well in life. "Sköt dig!" = Take care of yourself! No clean English equivalent.'},
+{id:11,cat:'verb',diff:'medium',sv:'Jag vågade inte fråga.',en:'I didn\'t dare ask.',note:'"Våga" (to dare): vågar → vågade → vågat. In Swedish: "vågade fråga" — no "att" between the two verbs. "Vågade att fråga" is an English calque.'},
+{id:12,cat:'verb',diff:'easy',sv:'Det spelar ingen roll.',en:'It doesn\'t matter.',note:'Literally "it plays no role." Very common. Past: "spelade ingen roll". Learn this phrase — you\'ll use it constantly.'},
+{id:13,cat:'verb',diff:'easy',sv:'Han tog det lugnt.',en:'He took it easy.',note:'"Ta det lugnt" is very common. "Tog" = past of "ta" (tar → tog → tagit). Also used as a farewell: "Ta det lugnt!" = Take care!'},
+{id:14,cat:'verb',diff:'hard',sv:'Vi måste ha glömt det hemma.',en:'We must have forgotten it at home.',note:'"Måste ha + supine" = must have (done something). Key: "måste" has NO past tense form — use "var tvungen att" for past obligation: "Vi var tvungna att gå."'},
+{id:15,cat:'verb',diff:'hard',sv:'Jag har aldrig hört talas om det.',en:'I\'ve never heard of it.',note:'"Höra talas om" = to have heard of something. Literally "hear talked about." Fixed phrase — very natural and common in speech.'},
+// ── PREPOSITIONS ──────────────────────────
+{id:16,cat:'prep',diff:'medium',sv:'Jag är bra på att laga mat.',en:'I\'m good at cooking.',note:'"Bra på" = good at. Don\'t translate from English — "bra i" doesn\'t work. "Duktig på" also works (more formal).'},
+{id:17,cat:'prep',diff:'medium',sv:'Vi ses om en vecka.',en:'See you in a week.',note:'"Om" = in (for future time). Never "i" for future — "i en vecka" means for a week (duration). Classic mix-up!'},
+{id:18,cat:'prep',diff:'medium',sv:'Hon bor hos sina föräldrar.',en:'She lives with / at her parents\'.',note:'"Hos" = at the place of / with someone\'s home. "Hos läkaren" = at the doctor\'s. No direct English equivalent — very Swedish.'},
+{id:19,cat:'prep',diff:'medium',sv:'Det beror på vädret.',en:'It depends on the weather.',note:'"Bero på" = to depend on. Always "på". "Vad beror det på?" = What is it due to? One of the most useful fixed expressions.'},
+{id:20,cat:'prep',diff:'medium',sv:'Jag är intresserad av historia.',en:'I\'m interested in history.',note:'"Intresserad av" = interested in. It\'s "av" — not "i" or "på". Trips up nearly every learner because English uses "in".'},
+{id:21,cat:'prep',diff:'medium',sv:'Hon är arg på mig.',en:'She\'s angry at / with me.',note:'"Arg på" = angry at. Compare: "besviken på" (disappointed in), "stolt över" (proud of), "rädd för" (afraid of). Each emotion locks to its own preposition.'},
+{id:22,cat:'prep',diff:'medium',sv:'Jag är van vid kyla.',en:'I\'m used to the cold.',note:'"Van vid" = used to / accustomed to. Don\'t confuse with "brukade" (past habit). "Van" = accustomed; "brukade" = used to do.'},
+{id:23,cat:'prep',diff:'medium',sv:'Han längtar efter sommaren.',en:'He\'s longing for summer.',note:'"Längta efter" = to long for. Always "efter". Similarly: "söka efter" (search for), "fråga efter" (ask for/enquire about).'},
+{id:24,cat:'prep',diff:'medium',sv:'Jag är trött på det här.',en:'I\'m tired of this.',note:'"Trött på" = tired of. English uses "of", Swedish uses "på". Learners often say "trött av" — only "trött på" is correct.'},
+{id:25,cat:'prep',diff:'medium',sv:'Vi pratade om det hela dagen.',en:'We talked about it all day.',note:'"Prata om" = to talk about. Many communication verbs use "om": "skriva om", "berätta om". Which preposition depends on the verb!'},
+{id:26,cat:'prep',diff:'easy',sv:'Det handlar om förtroende.',en:'It\'s about trust.',note:'"Handla om" = to be about (a subject, film, situation). "Vad handlar filmen om?" = What is the film about?'},
+{id:27,cat:'prep',diff:'medium',sv:'Han är nöjd med resultatet.',en:'He is satisfied with the result.',note:'"Nöjd med" = satisfied with. Compare: "glad över" (happy about), "besviken på" (disappointed in). No logic — must be memorised.'},
+{id:28,cat:'prep',diff:'easy',sv:'Jag saknar dig så mycket.',en:'I miss you so much.',note:'"Sakna" = to miss. Transitive — no preposition needed. Never "saknar efter dig". A common error from thinking in English.'},
+{id:29,cat:'prep',diff:'medium',sv:'Hon skrattade åt honom.',en:'She laughed at him (mockingly).',note:'"Skratta åt" = laugh at (mockingly). "Skratta med" = laugh with (together). The preposition completely changes the social meaning.'},
+{id:30,cat:'prep',diff:'medium',sv:'Vi åkte förbi deras hus.',en:'We drove past their house.',note:'"Åka förbi" = to pass by. "Förbi" works as both preposition and adverb. "Kan du gå förbi affären?" = Can you stop by the shop?'},
+// ── NOUN DECLENSION ───────────────────────
+{id:31,cat:'noun',diff:'medium',sv:'Kan du stänga fönstret?',en:'Can you close the window?',note:'"Fönster" is ett-word, zero plural: ett fönster → fönstret → fönster → fönstren. Zero plural common for ett-words ending in a consonant.'},
+{id:32,cat:'noun',diff:'medium',sv:'Männen stod och väntade utanför.',en:'The men were standing waiting outside.',note:'"Man" is highly irregular: en man → mannen → män → männen. "Stod och väntade" = two verbs describing one continuous action — very Swedish.'},
+{id:33,cat:'noun',diff:'medium',sv:'Hon läste alla böckerna.',en:'She read all the books.',note:'"Bok" is irregular: en bok → boken → böcker → böckerna. The vowel shift (o→ö) is umlaut. Same pattern: "fot→fötter", "rot→rötter".'},
+{id:34,cat:'noun',diff:'medium',sv:'Han har starka händer.',en:'He has strong hands.',note:'"Hand" → händer (umlaut plural, a→ä). Same shift: "strand→stränder", "land→länder", "tand→tänder". The ä-shift signals plural.'},
+{id:35,cat:'noun',diff:'medium',sv:'Vi är gamla vänner.',en:'We are old friends.',note:'"Vän" → vänner (add -ner, double the n). Don\'t confuse with "man→män" — completely different irregular path.'},
+{id:36,cat:'noun',diff:'medium',sv:'Det finns inga möjligheter kvar.',en:'There are no opportunities left.',note:'All "-het" nouns form plural with "-er": möjlighet→möjligheter, frihet→friheter, säkerhet→säkerheter. Very consistent rule!'},
+{id:37,cat:'noun',diff:'medium',sv:'Han är en av mina bästa kollegor.',en:'He is one of my best colleagues.',note:'"Kollega" → kollegor ("-or" plural from Latin). En-word despite ending in -a — like "mamma", "pappa", "schema".'},
+{id:38,cat:'noun',diff:'easy',sv:'Vad hände med pengarna?',en:'What happened to the money?',note:'"Pengar" is always plural — no singular exists. Similar always-plural: "kläder" (clothes), "möbler" (furniture).'},
+{id:39,cat:'noun',diff:'easy',sv:'Vi åt middag i köket.',en:'We ate dinner in the kitchen.',note:'"Kök" is ett-word, zero plural: ett kök → köket. "I köket" sounds more natural than "i ett kök" in context. Definite is the Swedish default.'},
+{id:40,cat:'noun',diff:'medium',sv:'Det är flickornas rum.',en:'It\'s the girls\' room.',note:'Swedish genitive: add -s to definite plural. Flicka → flickorna → flickornas. No apostrophe in Swedish! Always -s: "barnens", "husens".'},
+{id:41,cat:'noun',diff:'easy',sv:'Jag läste om det i tidningen.',en:'I read about it in the newspaper.',note:'"Tidning" → tidningen. Swedish uses definite form in context far more naturally than indefinite. The suffix attaches directly — unlike English "the".'},
+{id:42,cat:'noun',diff:'medium',sv:'Landet är känt för sin natur.',en:'The country is known for its nature.',note:'"Land" → landet (ett-word). Plural: länder → länderna (umlaut!). "Sin" = reflexive possessive when the possessor is the subject of the clause.'},
+{id:43,cat:'noun',diff:'easy',sv:'Alla barn behöver kärlek.',en:'All children need love.',note:'"Barn" has zero plural: ett barn → barnet → barn → barnen. Without "alla", only context tells you it\'s plural.'},
+{id:44,cat:'noun',diff:'easy',sv:'Hon köpte kläder hela dagen.',en:'She shopped for clothes all day.',note:'"Kläder" is always plural — no singular form. "Möbler" (furniture) and "pengar" (money) work the same way.'},
+{id:45,cat:'noun',diff:'medium',sv:'Det var ingen skillnad.',en:'There was no difference.',note:'"Skillnad" (en-word): en skillnad → skillnaden → skillnader → skillnaderna. Key phrases: "göra skillnad" (make a difference), "ingen skillnad".'},
+// ── WORD ORDER ────────────────────────────
+{id:46,cat:'word',diff:'medium',sv:'Imorgon åker vi till Göteborg.',en:'Tomorrow we\'re going to Gothenburg.',note:'V2 rule: verb must be in second position. Fronting "imorgon" pushes "vi" after "åker". Applies to ANY fronted element.'},
+{id:47,cat:'word',diff:'hard',sv:'Han sa att han inte ville komma.',en:'He said he didn\'t want to come.',note:'In subordinate clauses (after "att", "när", "om", "som"), "inte" comes BEFORE the verb. In main clauses: "han ville inte". The #1 word order mistake!'},
+{id:48,cat:'word',diff:'hard',sv:'Aldrig har jag sett något liknande.',en:'I have never seen anything like it.',note:'Fronting "aldrig" inverts subject and verb: "aldrig har jag" — NOT "aldrig jag har". Creates strong dramatic emphasis.'},
+{id:49,cat:'word',diff:'medium',sv:'Jag har redan ätit.',en:'I have already eaten.',note:'"Redan" slots between auxiliary "har" and supine "ätit" — same slot as "inte". Adverbs "redan", "inte", "alltid" all go after the first verb.'},
+{id:50,cat:'word',diff:'medium',sv:'Vi hann precis med tåget.',en:'We just barely made the train.',note:'"Hann precis med" = just managed to make it. "Precis" follows the main verb. "Hann knappt med" also works (barely made it).'},
+{id:51,cat:'word',diff:'hard',sv:'Kan du säga när tåget kommer?',en:'Can you tell me when the train comes?',note:'Indirect questions use normal word order: "när tåget kommer" NOT "när kommer tåget". Embedding a question changes the word order.'},
+{id:52,cat:'word',diff:'hard',sv:'Det är en film som jag har sett många gånger.',en:'It\'s a film that I\'ve seen many times.',note:'Relative clause with "som" uses normal word order. Never add "att": "som att jag har sett" is wrong. "Som" alone is the relative pronoun.'},
+{id:53,cat:'word',diff:'medium',sv:'Jag skulle gärna vilja ha ett till.',en:'I\'d love to have one more.',note:'"Gärna" slots after the first auxiliary: "skulle gärna vilja". Softens and polishes requests — very natural in polite Swedish.'},
+{id:54,cat:'word',diff:'hard',sv:'Trots att hon var trött orkade hon träna.',en:'Even though she was tired, she managed to work out.',note:'"Trots att" = even though. Normal subordinate word order follows. Fronted clause triggers V2 in main: "orkade hon".'},
+{id:55,cat:'word',diff:'medium',sv:'Han vill inte gå dit.',en:'He doesn\'t want to go there.',note:'Main clause: "inte" AFTER finite verb ("vill inte"). Subordinate: "att han inte vill gå dit". Position of "inte" signals clause type!'},
+{id:56,cat:'word',diff:'hard',sv:'Jag undrar om hon kommer.',en:'I wonder if she\'s coming.',note:'"Undra om" introduces indirect question with subject-first order: "om hon kommer" NOT "om kommer hon". Indirect questions never invert.'},
+{id:57,cat:'word',diff:'hard',sv:'Inte bara regnar det — det snöar också.',en:'Not only is it raining — it\'s snowing too.',note:'Fronting "inte bara" triggers V2 inversion: "regnar det". "Inte bara... utan också..." = not only... but also.'},
+{id:58,cat:'word',diff:'hard',sv:'Det är först när man bor utomlands som man inser det.',en:'It\'s only when you live abroad that you realise it.',note:'Cleft sentence: "Det är... som...". The second "som" is required. "Man" = impersonal one/you — very common in Swedish.'},
+{id:59,cat:'word',diff:'hard',sv:'Hon frågade om jag ville följa med.',en:'She asked if I wanted to come along.',note:'"Fråga om" = to ask if/whether. Subordinate clause uses normal (non-inverted) word order. Reported speech always uses subject-first order.'},
+{id:60,cat:'word',diff:'hard',sv:'Vi hinner nog inte med det idag.',en:'We probably won\'t have time for that today.',note:'When "nog" and "inte" both appear: verb → nog → inte. "Nog" precedes negation. "Hinner inte nog" is wrong and changes the nuance.'},
+]; // END ALL_CARDS — more cards injected below by CARD_EXTRA
+
+// ═══════════════════════════════════════════
+//  CARD EXTRAS (injected separately for file size)
+// ═══════════════════════════════════════════
+const CARD_EXTRA = [
+// ── IDIOMS (191-240) ──────────────────────
+{id:191,cat:'idiom',diff:'easy',sv:'Det gör ingenting.',en:'It doesn\'t matter. / That\'s OK.',note:'Very common reassurance. "Gör ingenting" = does nothing / doesn\'t matter. Use after apologies for "no worries". More casual than "det spelar ingen roll".'},
+{id:192,cat:'idiom',diff:'easy',sv:'Det är klart.',en:'Of course. / Sure. / That\'s clear.',note:'"Det är klart" = of course / naturally. Extremely common filler. "Klart!" alone = Sure! "Självklart" = self-evidently / of course (more emphatic).'},
+{id:193,cat:'idiom',diff:'easy',sv:'Jag fattar inte.',en:'I don\'t get it. / I don\'t understand.',note:'"Fatta" (colloquial) = to understand/get. "Fattar du?" = Do you get it? More informal than "förstår". Very common in everyday speech.'},
+{id:194,cat:'idiom',diff:'easy',sv:'Jag håller tummarna för dig.',en:'I\'m keeping my fingers crossed for you.',note:'"Hålla tummarna" = Swedish version of keeping fingers crossed — thumbs, not fingers! "Håller tummarna för dig" = rooting for you.'},
+{id:195,cat:'idiom',diff:'easy',sv:'Det är lite si och så.',en:'It\'s so-so. / It\'s not great.',note:'"Si och så" = so-so / mixed. "Det är lite si och så med ekonomin" = the economy is a bit up and down. Very colloquial. "Lite" softens further.'},
+{id:196,cat:'idiom',diff:'medium',sv:'Det är ingen idé att vänta.',en:'There\'s no point in waiting.',note:'"Det är ingen idé att + infinitive" = there\'s no point in doing. Very common. "Ingen idé" = no idea/no point. "Det är ingen idé" alone = pointless.'},
+{id:197,cat:'idiom',diff:'medium',sv:'Han har koll på läget.',en:'He has a handle on the situation.',note:'"Ha koll på" = to have a handle on / know about. Very colloquial. "Koll" = awareness/check. "Kollar du?" = Are you keeping an eye on it?'},
+{id:198,cat:'idiom',diff:'medium',sv:'Vi är i samma båt.',en:'We\'re in the same boat.',note:'"I samma båt" = in the same boat. Same metaphor as English. "Vi sitter alla i samma båt." Common when emphasising shared problems.'},
+{id:199,cat:'idiom',diff:'medium',sv:'Jag ser fram emot att träffa dig.',en:'I\'m looking forward to meeting you.',note:'"Se fram emot att + infinitive" = to look forward to doing. Note "att" before the infinitive. Very common in both speech and writing (emails especially).'},
+{id:200,cat:'idiom',diff:'easy',sv:'Det beror på.',en:'It depends.',note:'"Det beror på" = it depends. One of the most used phrases in Swedish. "Beror på" = depends on. "Beror på vad du menar" = depends what you mean. "Det beror på hur man ser det" = depends how you look at it. You\'ll use this every single day.'},
+{id:201,cat:'idiom',diff:'medium',sv:'Nu börjar det likna något!',en:'Now we\'re getting somewhere! / Now it\'s shaping up!',note:'"Nu börjar det likna något" = now it\'s starting to look like something = we\'re getting somewhere. Used when something finally starts working or improving. Very Swedish and very commonly used. Can also be ironic.'},
+{id:202,cat:'idiom',diff:'easy',sv:'Vad kul!',en:'How fun! / That\'s great! / Nice!',note:'"Vad kul!" = how fun! Used constantly as a genuine positive reaction to news. "Vad kul att höra!" = so great to hear! "Vad kul att du kom!" = so glad you came! "Kul" is one of the most Swedish words there is — learn it thoroughly.'},
+{id:203,cat:'idiom',diff:'easy',sv:'Det stämmer.',en:'That\'s right. / Correct. / That\'s true.',note:'"Det stämmer" = that matches / that\'s correct. Used all the time to confirm what someone said. "Stämmer det?" = is that right? "Precis, det stämmer" = exactly, that\'s right. Much more natural than "det är korrekt" which sounds formal.'},
+{id:204,cat:'idiom',diff:'easy',sv:'Det låter bra!',en:'That sounds good! / Sounds great!',note:'"Det låter bra" = that sounds good. "Låter" = sounds (from "låta"). Used constantly to agree to plans or react positively. "Låter som en bra idé!" = sounds like a good idea! "Hur låter det?" = how does that sound?'},
+{id:205,cat:'idiom',diff:'medium',sv:'Vi får ta det som det kommer.',en:'We\'ll have to take it as it comes.',note:'"Ta det som det kommer" = to take it as it comes. "Får" here = have to (obligative). Very common philosophical/practical expression.'},
+{id:206,cat:'idiom',diff:'easy',sv:'Jag kör på det säkra.',en:'I\'m playing it safe.',note:'"Köra på det säkra" = to play it safe. This is how people actually say it — not the full proverb "ta det säkra före det osäkra". "Kör på det säkra!" = play it safe! Very natural in speech.'},
+{id:207,cat:'idiom',diff:'medium',sv:'Det är bara att bita ihop.',en:'You just have to grit your teeth / push through.',note:'"Bita ihop" = to grit one\'s teeth / endure. "Det är bara att + infinitive" = just do it / all you can do is. Common for encouraging someone to endure.'},
+{id:208,cat:'idiom',diff:'easy',sv:'Hon är alltid igång med något.',en:'She\'s always got something on the go. / She\'s always up to something.',note:'"Igång med" = in the middle of / going with something. "Sätta igång" = to start. "Är igång" = is going/running. "Hon är alltid igång" = she never stops. Very natural — much more so than "järn i elden" which sounds old.'},
+{id:209,cat:'idiom',diff:'easy',sv:'Kom igen!',en:'Come on! / You can do it! / Seriously?!',note:'"Kom igen!" = come on! Works in two ways: encouraging someone ("come on, you\'ve got this!") or expressing disbelief/mild frustration ("come on, seriously?!"). Tone and context tell you which. Used all the time.'},
+{id:210,cat:'idiom',diff:'medium',sv:'Jag är med på noterna.',en:'I\'m in the loop. / I know the score. / I\'m clued in.',note:'"Vara med på noterna" = to be in the loop / know what\'s going on. Very commonly used. "Är du med på noterna?" = are you up to speed? "Noterna" literally = the musical notes (sheet music). One of those idioms everyone uses.'},
+{id:211,cat:'idiom',diff:'medium',sv:'Det är en annan femma.',en:'That\'s a different matter entirely.',note:'"Det är en annan femma" = that\'s another five-öre coin = that\'s a different matter. Very colloquial Swedish. "Femma" = five-kronor coin or the number five.'},
+{id:212,cat:'idiom',diff:'easy',sv:'Hon menar alltid väl.',en:'She always means well.',note:'"Mena väl" = to mean well. Simple and very commonly used — this is how people actually say it in speech. "Han menar väl men..." = he means well but... The older "hjärtat på rätta stället" is understood but sounds dated.'},
+{id:213,cat:'idiom',diff:'medium',sv:'Det är nog att ta i.',en:'That\'s a stretch / That\'s a bit much.',note:'"Det är att ta i" = that\'s going too far / that\'s an exaggeration. "Att ta i" = to overdo it / stretch the truth. "Det är lite att ta i" = that\'s a bit much.'},
+{id:214,cat:'idiom',diff:'medium',sv:'Jag ska ta det på allvar.',en:'I\'ll take it seriously.',note:'"Ta på allvar" = to take seriously. "Allvar" = seriousness. "På allvar" = seriously. "Menar du det på allvar?" = Are you serious? Very common expression.'},
+{id:215,cat:'idiom',diff:'medium',sv:'Det är ingen höjdare.',en:'It\'s nothing special. / It\'s not great.',note:'"Ingen höjdare" = nothing special/brilliant (mildly negative). Literally "no high one". Very colloquial Swedish understatement.'},
+{id:216,cat:'idiom',diff:'easy',sv:'Jag hade ingen aning.',en:'I had no idea.',note:'"Ingen aning" = no idea / no clue. "Hade ingen aning" = had no idea. "Har du någon aning?" = do you have any idea? / do you have a clue? Very common. Also used slightly sarcastically: "Han har ingen aning" = he has no idea what he\'s doing.'},
+{id:217,cat:'idiom',diff:'medium',sv:'Jag har tappat sugen helt.',en:'I\'ve completely lost motivation. / I\'m just not feeling it anymore.',note:'"Tappa sugen" = to lose motivation or enthusiasm. Everyday speech, all ages. "Jag tappar sugen" = I\'m losing interest. Opposite: "få sugen på något" = to get in the mood for something. Very natural and common.'},
+{id:218,cat:'idiom',diff:'easy',sv:'Nu kör vi!',en:'Here we go! / Let\'s do this! / We\'re off!',note:'"Nu kör vi!" = now we drive / go = here we go! Used to kick off something — a trip, a plan, a task. "Kör vi?" = shall we? / ready to go? "Vi kör" = we\'re doing it. The verb "köra" is incredibly versatile in Swedish speech.'},
+{id:219,cat:'idiom',diff:'easy',sv:'Vad synd!',en:'What a shame! / That\'s too bad! / What a pity!',note:'"Vad synd!" = what a pity! Extremely common reaction to bad news. "Synd" = shame/pity. "Det är synd om honom" = I feel sorry for him. "Vad synd att du inte kan komma" = what a shame you can\'t make it. Used constantly in everyday conversation.'},
+{id:220,cat:'idiom',diff:'medium',sv:'Det är som att snacka för döva öron.',en:'It\'s like talking to a wall. / It falls on deaf ears.',note:'"Snacka för döva öron" = talking to deaf ears. Very common across all ages. Used when someone keeps ignoring your point or advice. "Snacka" = colloquial for "prata". Much more natural in everyday speech than the old "kasta pärlor för svin".'},
+{id:221,cat:'idiom',diff:'easy',sv:'Hon var rakt på sak.',en:'She was straight to the point / direct.',note:'"Rakt på sak" = straight to the point, no beating around the bush. Super common in everyday speech across all ages. "Kan vi vara rakt på sak?" = can we just get to the point? Much more useful and natural than "ta bladet från munnen" which sounds literary.'},
+{id:222,cat:'idiom',diff:'easy',sv:'Det är värt det.',en:'It\'s worth it.',note:'"Det är värt det" = it\'s worth it. "Värt" = worth (neuter adjective). "Är det värt det?" = is it worth it? "Det var värt det!" = it was worth it! Also: "värt ett försök" = worth a try. One of those constructions you need in every language.'},
+{id:223,cat:'idiom',diff:'medium',sv:'Vi sitter verkligen i en knipa.',en:'We\'re really in a tight spot / in a pickle.',note:'"Sitta i knipa" = to be in a tight spot or difficult situation. Very common, all ages. "En knipa" = a predicament. "Sätta ngn i knipa" = to put someone in a difficult position. Much more useful than obscure old expressions.'},
+{id:224,cat:'idiom',diff:'easy',sv:'Jag lovar.',en:'I promise. / I swear.',note:'"Jag lovar" = I promise. "Lovar du?" = do you promise? "Jag lovar att jag kommer" = I promise I\'ll come. Also used for emphasis: "Det var jättegott, jag lovar" = it was really good, I swear. Super common in everyday speech.'},
+{id:225,cat:'idiom',diff:'easy',sv:'Gör som du vill.',en:'Do as you like. / Suit yourself. / Up to you.',note:'"Gör som du vill" = do as you wish. Used both genuinely (you decide) and slightly resigned (fine, whatever). "Det är upp till dig" = it\'s up to you. "Gör som du vill, men..." = do what you want, but... Super common in everyday decisions.'},
+{id:226,cat:'idiom',diff:'easy',sv:'Det hänger ihop.',en:'It makes sense. / It all adds up.',note:'"Hänga ihop" = to hang together = to make sense / be coherent. Extremely common. "Det hänger inte ihop" = that doesn\'t make sense / that doesn\'t add up. "Din story hänger inte ihop" = your story doesn\'t add up. Used all the time in everyday conversation.'},
+{id:227,cat:'idiom',diff:'easy',sv:'Det är inte klokt!',en:'That\'s unbelievable! / That\'s insane!',note:'"Det är inte klokt" literally means "it\'s not sensible" but is used as an exclamation of amazement (positive or negative). Super Swedish and used constantly. "Det är inte klokt hur bra han spelar!" = it\'s unbelievable how well he plays! All ages, very colloquial.'},
+{id:228,cat:'idiom',diff:'medium',sv:'Jag tänker ligga lågt ett tag.',en:'I\'m going to keep a low profile for a while.',note:'"Ligga lågt" = to lie low / keep a low profile. Very common in modern Swedish. Used when avoiding attention after a mistake, conflict, or controversy. "Ligga lågt med" = to not push something. Universally natural.'},
+{id:229,cat:'idiom',diff:'easy',sv:'Vi är inte riktigt i mål ännu.',en:'We\'re not quite there yet.',note:'"I mål" = at the finish line / at the goal. "Komma i mål" = to reach the finish line. Very natural phrase used constantly for projects, tasks, or goals. "Vi kom äntligen i mål!" = we finally got there! All ages, very common in both work and everyday speech.'},
+{id:230,cat:'idiom',diff:'medium',sv:'Jag förstår inte vad det tjänar till.',en:'I don\'t see what the point is.',note:'"Tjäna till" = to serve a purpose. "Vad tjänar det till?" = What\'s the point? "Tjänar till" often appears in negative or questioning contexts.'},
+// ── MODAL VERBS (231-260) ─────────────────
+{id:231,cat:'modal',diff:'medium',sv:'Du borde ha ringt mig.',en:'You should have called me.',note:'"Borde ha + supine" = should have (done). "Borde" is past of "bör" but used as present recommendation. Compare "skulle ha" = would have (conditional).'},
+{id:232,cat:'modal',diff:'medium',sv:'Det kan hända att hon inte kommer.',en:'She might not come. / It may be that she\'s not coming.',note:'"Kan hända att" = it may happen that = it\'s possible that. "Kan hända" alone = maybe (very common filler). More casual than "det är möjligt att".'},
+{id:233,cat:'modal',diff:'medium',sv:'Vi får inte parkera här.',en:'We\'re not allowed to park here.',note:'"Får inte" = is/are not allowed to (prohibition). "Får" = may/is allowed to. "Får" signals permission, not just ability. Compare "kan inte" = can\'t (ability).'},
+{id:234,cat:'modal',diff:'medium',sv:'Ska vi ses imorgon?',en:'Shall we meet tomorrow?',note:'"Ska vi...?" = shall we? "Ska" for arranged future or suggestion. "Ska" vs "kommer att": "ska" = intention/plan, "kommer att" = prediction based on evidence.'},
+{id:235,cat:'modal',diff:'medium',sv:'Du måste inte komma om du inte vill.',en:'You don\'t have to come if you don\'t want to.',note:'"Måste inte" = don\'t have to (no obligation) — NOT "must not"! Critical false friend. "Får inte" = must not (prohibition). "Måste inte" = not required.'},
+{id:236,cat:'modal',diff:'medium',sv:'Jag skulle vilja boka ett bord.',en:'I would like to book a table.',note:'"Skulle vilja" = would like to. The polite request form. "Boka ett bord" = to book/reserve a table — the most natural phrase. "Beställa ett bord" also exists but "boka" is more common. "Skulle vilja ha" = would like to have.'},
+{id:237,cat:'modal',diff:'medium',sv:'Det kan inte stämma.',en:'That can\'t be right.',note:'"Kan inte" expressing logical impossibility. "Stämma" = to be correct. "Det kan inte stämma" = that can\'t be right/true. Very common in surprised reactions.'},
+{id:238,cat:'modal',diff:'hard',sv:'Vi bör hålla oss till ämnet.',en:'We should stick to the subject.',note:'"Bör" = should (objective obligation). Stronger and more formal than "borde". "Bör" is present; "borde" is past used as recommendation. "Vi bör" = we should (formal).'},
+{id:239,cat:'modal',diff:'medium',sv:'Fick du sova bra?',en:'Did you sleep well? / Did you manage to sleep well?',note:'"Fick" as past question: did you manage to? "Fick sova" = managed to sleep / got to sleep. "Fick" from "få" often implies getting the opportunity or achieving a result.'},
+{id:240,cat:'modal',diff:'hard',sv:'Man kan inte alltid få som man vill.',en:'You can\'t always get what you want.',note:'"Man kan inte" = one cannot / you can\'t (general truth). "Få som man vill" = get what one wants. "Man" as impersonal subject is very common for general statements.'},
+{id:241,cat:'modal',diff:'medium',sv:'Ska det vara lite mer?',en:'Would you like a little more?',note:'"Ska det vara?" = shall it be? = would you like? Common in shops and restaurants. "Lite mer" = a little more. "Ska" here is offering/asking about preference.'},
+{id:242,cat:'modal',diff:'medium',sv:'Det kunde ha gått värre.',en:'It could have gone worse.',note:'"Kunde ha + supine" = could have (past possibility). "Gått" = supine of "gå". Compare: "hade kunnat gå" (also correct). Both forms exist for counterfactual past.'},
+{id:243,cat:'modal',diff:'hard',sv:'Han lär ha sagt det.',en:'He is said to have said it. / Apparently he said it.',note:'"Lär" = is said to / apparently (hearsay modal). Very Swedish! "Han lär vara sjuk" = apparently he\'s sick. Expresses information heard from others. No direct English equivalent.'},
+{id:244,cat:'modal',diff:'hard',sv:'Det vore bra om du kunde hjälpa till.',en:'It would be great if you could help out.',note:'"Vore" = would be (subjunctive-like form of "vara"). "Vore bra" = would be great. "Kunde" = could (conditional). Polite request structure: vore + om + kunde.'},
+{id:245,cat:'modal',diff:'medium',sv:'Får jag be om notan?',en:'Could I have the bill, please?',note:'"Får jag be om" = may I ask for / could I have. Polite request formula. "Notan" = the restaurant bill. "Nota" is restaurant-specific; "faktura" = invoice.'},
+{id:246,cat:'modal',diff:'medium',sv:'Vi skulle nog kunna lösa det.',en:'We could probably solve it.',note:'"Skulle nog kunna" = could probably. Three-part modal chain: skulle (conditional) + nog (probably) + kunna (can). Adverb "nog" slots between modals.'},
+{id:247,cat:'modal',diff:'hard',sv:'Det verkar vara ett återkommande problem.',en:'It seems to be a recurring problem.',note:'"Verkar" = seems (natural in speech). NOT "tycks" — that\'s written/formal. "Återkommande" = recurring (present participle as adjective, always invariable). "Det verkar som att..." also works for longer explanations.'},
+{id:248,cat:'modal',diff:'medium',sv:'Ska vi ta en fika?',en:'Shall we have a coffee break?',note:'"Fika" = the Swedish coffee break — both noun and verb. "Ska vi fika?" = Shall we grab a coffee? Essential Swedish cultural and linguistic knowledge!'},
+{id:249,cat:'modal',diff:'hard',sv:'Jag kan faktiskt tänka mig att flytta utomlands.',en:'I could actually see myself moving abroad.',note:'"Kan tänka sig att" = could imagine / could see oneself doing. Very common spoken expression. "Faktiskt" adds natural conversational weight. Much more useful than "kan komma att" which is bureaucratic. "Tänka sig" = to imagine/consider.'},
+{id:250,cat:'modal',diff:'hard',sv:'Det får bero på om det regnar.',en:'That depends on whether it rains.',note:'"Får bero på" = will depend on (slightly formal). "Beror på om" = depends on whether. "Om" in subordinate clause = whether. Normal word order after "om".'},
+{id:251,cat:'modal',diff:'hard',sv:'Det borde inte behöva vara så svårt.',en:'It shouldn\'t need to be that hard.',note:'"Borde inte behöva" = shouldn\'t need to. Double modal: borde (should) + behöva (need to). The negation "inte" goes after the first modal: "borde inte behöva".'},
+{id:252,cat:'modal',diff:'hard',sv:'Han är nog hemma nu, om jag inte tar fel.',en:'He\'s probably home now, if I\'m not mistaken.',note:'"Nog" = probably (hedging, very common). "Om jag inte tar fel" = if I\'m not mistaken — natural spoken hedge. Together they give a tentative, natural-sounding statement. Much more useful than "torde" which nobody says out loud.'},
+{id:253,cat:'modal',diff:'medium',sv:'Det behöver inte vara komplicerat.',en:'It doesn\'t need to be complicated.',note:'"Behöver inte" = doesn\'t need to (no necessity). Similar to "måste inte" but "behöva" focuses on need. Both are correct here. The negation position differs in subordinate clauses.'},
+{id:254,cat:'modal',diff:'hard',sv:'Vi hinner säkert med det om vi skyndar oss.',en:'We\'ll definitely have time if we hurry.',note:'"Hinna med" = to have enough time for / make it in time. "Skynda sig" = to hurry (reflexive). "Säkert" = definitely/certainly. This combo — hinna + skynda — is extremely natural and comes up all the time.'},
+{id:255,cat:'modal',diff:'medium',sv:'Det kan väl hända vem som helst.',en:'That can happen to anyone, really.',note:'"Väl" = well / I suppose / surely (hedging). "Vem som helst" = anyone. "Väl" in this position softens and seeks agreement: "det kan väl hända" = that can happen, right?'},
+{id:256,cat:'modal',diff:'medium',sv:'Vi måste se till att alla förstår.',en:'We must make sure everyone understands.',note:'"Måste se till att" = must make sure that. "Se till att" = to ensure. "Måste" expresses strong necessity. "Alla förstår" uses normal subordinate order.'},
+{id:257,cat:'modal',diff:'medium',sv:'Kan du inte låta bli?',en:'Can\'t you leave it alone? / Can\'t you stop?',note:'"Låta bli" = to leave something alone / refrain. "Kan du inte låta bli?" = Can\'t you stop/resist? A slightly frustrated request to stop doing something.'},
+{id:258,cat:'modal',diff:'hard',sv:'Vi hade kunnat undvika det hela.',en:'We could have avoided the whole thing.',note:'"Hade kunnat + infinitive" = could have (strong counterfactual). "Kunnat" = supine of "kunna". "Det hela" = the whole thing. Formal alternative to "hela grejen".'},
+{id:259,cat:'modal',diff:'medium',sv:'Ska du verkligen göra det?',en:'Are you really going to do that?',note:'"Ska" for intention/plan. "Verkligen" = really/truly, placed after the subject in questions. In statements: "du ska verkligen göra det" — same adverb slot.'},
+{id:260,cat:'modal',diff:'hard',sv:'Det skulle kunna fungera.',en:'That could work.',note:'"Skulle kunna" = could / might be able to (conditional). More tentative than "kan fungera". "Fungera" = to work/function. Common when cautiously evaluating an idea.'},
+// ── CONDITIONALS (261-285) ────────────────
+{id:261,cat:'cond',diff:'medium',sv:'Om det regnar tar vi bilen.',en:'If it rains, we\'ll take the car.',note:'Real conditional: "om" + present → present/future. Swedish doesn\'t use future tense in the "om" clause — "om det regnar" not "om det ska regna". Same rule as English after "if".'},
+{id:262,cat:'cond',diff:'medium',sv:'Om du tränar mer kommer du att bli bättre.',en:'If you train more, you\'ll get better.',note:'"Om" + present → "kommer att" for future result. "Komma att" = neutral future prediction in the main clause. Very common real conditional structure.'},
+{id:263,cat:'cond',diff:'hard',sv:'Om jag hade vetat det skulle jag ha stannat.',en:'If I had known, I would have stayed.',note:'Counterfactual past: "om" + past perfect ("hade vetat") → "skulle ha" + supine. Most common mistake: using present instead of "hade vetat".'},
+{id:264,cat:'cond',diff:'hard',sv:'Om det vore sant skulle jag ha hört det.',en:'If it were true, I would have heard about it.',note:'"Vore" (conditional of "vara") + "skulle ha" + supine = counterfactual mixed. "Vore" = hypothetical present state; "skulle ha hört" = past consequence.'},
+{id:265,cat:'cond',diff:'hard',sv:'Hade hon kommit i tid hade vi hunnit.',en:'Had she come on time, we would have made it.',note:'Inverted conditional (no "om"): "Hade hon kommit" = if she had come. Drop "om" and invert verb/subject. Formal but used in speech for emphasis.'},
+{id:266,cat:'cond',diff:'hard',sv:'Om bara hon hade lyssnat på mig.',en:'If only she had listened to me.',note:'"Om bara" = if only (expressing regret). Always followed by past perfect. "Hade lyssnat" = had listened. The wish/regret is implied — no main clause needed.'},
+{id:267,cat:'cond',diff:'hard',sv:'Även om det är svårt ger vi inte upp.',en:'Even if it\'s difficult, we won\'t give up.',note:'"Även om" = even if (concessive conditional). Normal subordinate word order follows. Fronted clause triggers V2 in main: "ger vi".'},
+{id:268,cat:'cond',diff:'hard',sv:'Om jag hade haft mer tid hade jag bakat en tårta.',en:'If I had had more time, I would have baked a cake.',note:'Past unreal conditional: "om + hade + supine" in the if-clause. "Hade jag bakat" = would I have baked. "Haft" = supine of "ha". Double "hade" construction is natural in speech for past hypotheticals.'},
+{id:269,cat:'cond',diff:'medium',sv:'Om du inte skyndar dig missar du bussen.',en:'If you don\'t hurry, you\'ll miss the bus.',note:'"Skynda sig" = to hurry (reflexive). "Om du inte" + present → future consequence. "Missar" is present but functions as future after "om". Standard real conditional.'},
+{id:270,cat:'cond',diff:'hard',sv:'Förutsatt att allt går som planerat är vi klara på fredag.',en:'Provided everything goes as planned, we\'ll be done by Friday.',note:'"Förutsatt att" = provided that / assuming that. More formal than "om". "Som planerat" = as planned. Common in project/business contexts.'},
+{id:271,cat:'cond',diff:'hard',sv:'Bara du lovar att hålla tyst berättar jag.',en:'As long as you promise to keep quiet, I\'ll tell you.',note:'"Bara" + clause = as long as / provided that. "Hålla tyst" = to keep quiet. V2 in main: "berättar jag". Very common informal conditional.'},
+{id:272,cat:'cond',diff:'medium',sv:'Om det inte fungerar försöker vi igen.',en:'If it doesn\'t work, we\'ll try again.',note:'Negative conditional: "om det inte fungerar". "Inte" before the verb in the subordinate clause (subordinate word order rule). "Försöker" = present as future.'},
+{id:273,cat:'cond',diff:'hard',sv:'Utan din hjälp hade vi aldrig klarat det.',en:'Without your help, we would never have managed.',note:'"Utan" + noun phrase as conditional: = if it hadn\'t been for. Main clause: "hade vi aldrig klarat" (inverted counterfactual). "Klarat" = supine of "klara".'},
+{id:274,cat:'cond',diff:'hard',sv:'Antingen löser vi det nu eller tar vi konsekvenserna.',en:'Either we solve it now or we face the consequences.',note:'"Antingen... eller..." = either... or... V2 in both clauses: "löser vi" and "tar vi". Clause-initial elements trigger inversion in both.'},
+{id:275,cat:'cond',diff:'hard',sv:'Om jag fick välja skulle jag flytta till Spanien.',en:'If I could choose, I\'d move to Spain.',note:'"Fick välja" = were able to choose / if I got to choose. "Fick" in conditional = hypothetical permission. "Skulle flytta" = would move. Common hypothetical.'},
+{id:276,cat:'cond',diff:'hard',sv:'Förutsatt att du inte har något emot det fixar jag det.',en:'As long as you don\'t mind, I\'ll sort it.',note:'"Förutsatt att" = provided that / as long as (more natural than "under förutsättning att"). Fronted clause triggers V2: "fixar jag". Very useful structure. "Har du något emot det?" = do you mind? (lit. "do you have anything against it?")'},
+{id:277,cat:'cond',diff:'hard',sv:'Oavsett vad som händer finns vi här för dig.',en:'Whatever happens, we\'re here for you.',note:'"Oavsett vad som händer" = whatever happens. Fronted conditional triggers V2: "finns vi". Warm, reassuring expression. "Finns vi" = we are (here).'},
+{id:278,cat:'cond',diff:'medium',sv:'Om du inte vet svaret är det bättre att fråga.',en:'If you don\'t know the answer, it\'s better to ask.',note:'"Det är bättre att" = it\'s better to. "Inte vet" = subordinate clause order (not "vet inte"). The "inte" position is the key test for clause type.'},
+{id:279,cat:'cond',diff:'hard',sv:'Var det inte för sin familj skulle han ha slutat för länge sedan.',en:'Were it not for his family, he would have quit long ago.',note:'"Var det inte för" = were it not for. Formal inverted conditional. "Skulle ha slutat" = would have quit. "För länge sedan" = long ago.'},
+{id:280,cat:'cond',diff:'hard',sv:'Om vi hade bokat i förväg hade vi fått bättre pris.',en:'If we\'d booked in advance, we would have got a better price.',note:'Past counterfactual: "om" + past perfect → past perfect in main clause (without "skulle"). "I förväg" = in advance. Both "hade vi fått" and "skulle vi ha fått" are correct — the shorter form sounds more natural in speech.'},
+{id:281,cat:'cond',diff:'hard',sv:'Skulle du ändra dig är det bara att höra av sig.',en:'If you change your mind, just get in touch.',note:'"Skulle du + infinitive" = if you should... (inverted conditional, no "om"). More natural in speech than "Om så vore fallet" etc. "Ändra sig" = to change one\'s mind. "Höra av sig" = to get in touch. Fronted clause → V2: "är det".'},
+{id:282,cat:'cond',diff:'hard',sv:'Jag föredrar faktiskt att ta tåget om det går.',en:'I actually prefer taking the train if possible.',note:'"Föredra att" = to prefer to (föredrar → föredrog → föredragit). Irregular verb! "Om det går" = if possible (lit. "if it works"). Very natural spoken qualifier. "Faktiskt" adds honest emphasis.'},
+{id:283,cat:'cond',diff:'hard',sv:'I fall att han inte dyker upp, vad gör vi då?',en:'In case he doesn\'t show up, what do we do?',note:'"I fall att" = in case (that). More formal than "ifall". "Dyker upp" = shows up — irregular: dyker → dök → dykt. "Då" = then (in that case).'},
+{id:284,cat:'cond',diff:'hard',sv:'Hursomhelst måste vi ta ett beslut.',en:'Either way / Whatever happens, we need to make a decision.',note:'"Hursomhelst" = whatever the case / either way. One word. V2: "måste vi" because fronted. "Ta ett beslut" = make a decision (not "göra" a decision).'},
+{id:285,cat:'cond',diff:'medium',sv:'Kom ihåg det om du glömmer allt annat.',en:'Remember this if you forget everything else.',note:'"Kom ihåg" = remember (imperative of "komma ihåg"). "Om du glömmer allt annat" = if you forget everything else. Real conditional in imperative context — very common in instructions.'},
+// ── PARTICIPLES (286-310) ─────────────────
+{id:286,cat:'part',diff:'medium',sv:'Det är en intressant fråga.',en:'That\'s an interesting question.',note:'"Intressant" = interesting. Present participles (ending -ande/-ende) don\'t decline for ett-words vs en-words — "intressant" is the same for both! "En intressant fråga" / "ett intressant ämne".'},
+{id:287,cat:'part',diff:'medium',sv:'Det var otroligt spännande.',en:'It was incredibly exciting.',note:'"Spännande" = exciting (present participle of "spänna"). Present participles ending in -ande/-ende never change form: "en spännande film", "ett spännande spel", "spännande böcker" — always same. Very common everyday word.'},
+{id:288,cat:'part',diff:'hard',sv:'Resultaten är lovande.',en:'The results are promising.',note:'"Lovande" = promising (present participle of "lova"). Predicative: "är lovande". Attributive: "lovande resultat" — no -t for ett, no -e for plural. Present participles are invariable.'},
+{id:289,cat:'part',diff:'hard',sv:'Det var en ganska krävande vecka.',en:'It was a pretty demanding week.',note:'"Krävande" = demanding (present participle of "kräva"). "En krävande vecka / ett krävande jobb / krävande uppgifter" — present participles never change form. Very common: "jobbigt" = tough, "krävande" = demanding.'},
+{id:290,cat:'part',diff:'hard',sv:'Mötet är inbokat för imorgon.',en:'The meeting is booked for tomorrow.',note:'"Inbokat" = booked (perfect participle of "boka in", ett-word: -at). Perfect participle agreement: en-word = -ad, ett-word = -at, plural = -ade. "Mötet" is ett → inbokat.'},
+{id:291,cat:'part',diff:'hard',sv:'Han är helt självlärd.',en:'He\'s completely self-taught.',note:'"Självlärd" = self-taught (compound past participle: själv + lärd). En-word form: "självlärd". "Hon är självlärd" / "ett självlärt geni" (ett-word: -t). Common and natural way to describe someone.'},
+{id:292,cat:'part',diff:'hard',sv:'Rapporten är ännu inte färdigskriven.',en:'The report isn\'t finished / written yet.',note:'"Färdigskriven" = finished (compound participle: färdig + skriven, en-word). "Rapporten" = en-word → "färdigskriven". "Färdigskrivet" for ett-words. Common in work contexts.'},
+{id:293,cat:'part',diff:'hard',sv:'Hon var uppenbart irriterad.',en:'She was obviously irritated.',note:'"Irriterad" = irritated (past participle used as adjective, en-word: -d). "Uppenbart" = obviously (adverb). "Han var irriterad" / "det var irriterande" (present participle = the thing causing it). Key distinction: -d = the person feeling it, -ande = the thing causing it.'},
+{id:294,cat:'part',diff:'hard',sv:'Projektet är avslutat.',en:'The project is finished / completed.',note:'"Avslutat" = completed (perfect participle of "avsluta", ett-word: -at). Predicative. Attributive: "ett avslutat projekt". Compare "avslutad" (en-word): "en avslutad diskussion".'},
+{id:295,cat:'part',diff:'hard',sv:'Det var ett oväntat besked.',en:'It was an unexpected message/decision.',note:'"Oväntat" = unexpected (perfect participle, ett-word: -t, negated with o-). "En oväntad nyhet" (en-word: -d). The o- prefix negates: oväntad/oväntat = unexpected.'},
+{id:296,cat:'part',diff:'hard',sv:'Hon är utbildad lärare.',en:'She is a trained / qualified teacher.',note:'"Utbildad" = trained (perfect participle of "utbilda", en-word: -d). Predicative: "är utbildad". Attributive: "en utbildad lärare". Common professional description.'},
+{id:297,cat:'part',diff:'hard',sv:'Alla inbjudna hade en jättekul kväll.',en:'All the invited guests had a great evening.',note:'"Inbjudna" = invited (perfect participle, plural: -na). "Bjuda in" → inbjuden (en-word) / inbjudet (ett-word) / inbjudna (plural). Participle used as noun here — the invited ones. Very natural construction.'},
+{id:298,cat:'part',diff:'hard',sv:'Det är ett genomtänkt förslag.',en:'It\'s a well thought-out proposal.',note:'"Genomtänkt" = well thought-out (compound: genom + tänkt, ett-word: -t). "Förslag" is ett-word. If en-word: "en genomtänkt plan" (-d). Participle agreement applies to compounds too.'},
+{id:299,cat:'part',diff:'hard',sv:'Dörren stod olåst hela natten.',en:'The door was unlocked all night.',note:'"Olåst" = unlocked (perfect participle of "låsa", en-word: -t short form). "O-" prefix negates: olåst = unlocked, oanvänd = unused, oläst = unread. "Stod" here = was (state, not movement). Very natural predicative use.'},
+{id:300,cat:'part',diff:'hard',sv:'Det är ett ganska förvirrande system.',en:'It\'s a pretty confusing system.',note:'"Förvirrande" = confusing (present participle of "förvirra"). "Förvirrad" = confused (past participle — the person). Key distinction: "filmen var förvirrande" (the film was confusing) vs "jag var förvirrad" (I was confused). -ande = cause, -d = effect.'},
+{id:301,cat:'part',diff:'hard',sv:'Hon var den drivande kraften bakom projektet.',en:'She was the driving force behind the project.',note:'"Drivande" = driving (present participle of "driva"). Attributive present participle: same form for all genders/numbers. "Den drivande" uses definite form — preceded by "den/det/de".'},
+{id:302,cat:'part',diff:'hard',sv:'Hon blev riktigt engagerad i projektet.',en:'She got really invested in the project.',note:'"Engagerad" = engaged/invested (past participle, en-word: -d). "Engagerad i" = invested in. "Ett engagerat lag" (ett-word: -at). Agreement: -d (en), -t (ett), -de (plural). Very common for describing someone who cares.'},
+{id:303,cat:'part',diff:'hard',sv:'Han är van att hantera stressande situationer.',en:'He\'s used to handling stressful situations.',note:'"Stressande" = stressful/stressing (present participle). Invariable: "en stressande dag", "ett stressande möte". "Hantera" = to handle/manage — very useful professional verb.'},
+{id:304,cat:'part',diff:'hard',sv:'De erbjöd mig en avancerad kurs.',en:'They offered me an advanced course.',note:'"Avancerad" = advanced (perfect participle/adjective, en-word). "En avancerad kurs" (en-word: -d). "Ett avancerat system" (ett-word: -t). "Erbjöd" = past of "erbjuda" — irregular: erbjuder → erbjöd → erbjudit.'},
+{id:305,cat:'part',diff:'hard',sv:'Rapporten är välskriven och tydlig.',en:'The report is well-written and clear.',note:'"Välskriven" = well-written (compound participle, en-word: -en). "Rapporten" = en-word → välskriven. "Ett välskrivet mejl" = a well-written email (ett-word: -et). Compound participles follow same agreement rules.'},
+// ── HARDER VERB CONJUGATION (101-125) ─────
+{id:101,cat:'verb',diff:'hard',sv:'Det hade kunnat bli värre.',en:'It could have been worse.',note:'"Hade kunnat" = could have (counterfactual past). "Kunnat" is supine of "kunna". Layered modal construction: hade + kunnat + bli — each element is required.'},
+{id:102,cat:'verb',diff:'hard',sv:'Boken kom ut förra året.',en:'The book came out last year.',note:'"Komma ut" = to come out / be released. "Kom ut" is how people actually talk about books, films, games being released. "Gavs ut" is the written/formal passive version — avoid it in speech. "Kommer ut" = is coming out (future).'},
+{id:103,cat:'verb',diff:'hard',sv:'Han lät bli att svara.',en:'He chose not to answer / He refrained from answering.',note:'"Låta bli" = to refrain from / choose not to. Very useful fixed expression. "Låt bli!" = Leave it! / Don\'t!'},
+{id:104,cat:'verb',diff:'hard',sv:'Jag fick inte tag på honom.',en:'I couldn\'t get hold of him.',note:'"Få tag på" = to get hold of / reach someone. Past: "fick inte tag på". Compare "få reda på" (find out), "få syn på" (catch sight of) — all use "få" differently.'},
+{id:105,cat:'verb',diff:'hard',sv:'Vi råkade se honom på stan.',en:'We happened to see him in town.',note:'"Råka" + infinitive = to happen to (by accident). Conjugation: råkar → råkade → råkat. "Råkade säga" = accidentally said. Very natural spoken expression.'},
+{id:106,cat:'verb',diff:'hard',sv:'Det lönar sig inte.',en:'It\'s not worth it.',note:'"Löna sig" = to be worth it / pay off. Reflexive. "Det lönar sig att vänta" = it\'s worth waiting. "Det lönade sig" = it paid off.'},
+{id:107,cat:'verb',diff:'hard',sv:'Han verkade ha glömt alltihop.',en:'He seemed to have forgotten everything.',note:'"Verka" = to seem/appear. "Verkade ha" = seemed to have. Natural in speech. Note: "tyckas/tycktes" exists but is written/formal — always use "verka" when speaking.'},
+{id:108,cat:'verb',diff:'hard',sv:'Det visar sig att hon hade rätt.',en:'It turns out she was right.',note:'"Visa sig" = to turn out / prove to be. "Visade sig" = turned out (past). Very useful: "det visar sig att..." introduces a surprising revelation.'},
+{id:109,cat:'verb',diff:'hard',sv:'Jag ska se till att det blir gjort.',en:'I\'ll make sure it gets done.',note:'"Se till att" = to make sure that. "Bli gjort" = gets done (-s passive alternative). "Se till" also means to look after: "se till barnen".'},
+{id:110,cat:'verb',diff:'hard',sv:'Vi lade märke till att något saknades.',en:'We noticed that something was missing.',note:'"Lägga märke till" = to notice. Fixed expression. "Saknas" = to be missing (-s form). "Vad saknas?" = What\'s missing?'},
+{id:111,cat:'verb',diff:'hard',sv:'Det dröjde inte länge innan han dök upp.',en:'It wasn\'t long before he showed up.',note:'"Dröja" = to take time. "Dröjde inte länge" = didn\'t take long. "Dyka upp" = to show up — irregular: dyker → dök → dykt.'},
+{id:112,cat:'verb',diff:'hard',sv:'Jag tänker inte gå dit.',en:'I\'m not going there / I refuse to go there.',note:'"Tänka" + infinitive = to intend / plan. "Tänker inte" signals strong refusal or determination — stronger than just "ska inte" in this context.'},
+{id:113,cat:'verb',diff:'hard',sv:'Hon verkade inte bry sig om det.',en:'She didn\'t seem to care about it.',note:'"Verka" + infinitive = to seem to. "Bry sig om" = to care about. Reflexive. "Bry dig inte!" = Don\'t worry about it!'},
+{id:114,cat:'verb',diff:'hard',sv:'Det går inte att veta säkert.',en:'It\'s impossible to know for certain.',note:'"Det går inte att + infinitive" = it\'s not possible to. "Det går att" = it\'s possible to. Common replacement for "det är möjligt att".'},
+{id:115,cat:'verb',diff:'hard',sv:'Han påstår att han inte var inblandad.',en:'He claims he wasn\'t involved.',note:'"Påstå" = to claim/assert. Conjugation: påstår → påstod → påstått. Compare "hävda" = to assert (stronger, more formal).'},
+{id:116,cat:'verb',diff:'hard',sv:'Det ordnar sig nog.',en:'It\'ll work out / sort itself out.',note:'"Ordna sig" = to sort itself out. Reflexive. "Det ordnar sig" is a very common reassuring phrase. "Nog" here = probably.'},
+{id:117,cat:'verb',diff:'hard',sv:'Jag hoppas att du mår bra.',en:'I hope you\'re doing well.',note:'"Hoppas" is a deponent: hoppas → hoppades → hoppats. The subordinate clause after "hoppas att" takes normal word order — no inversion.'},
+{id:118,cat:'verb',diff:'hard',sv:'Vi fick reda på det för sent.',en:'We found out about it too late.',note:'"Få reda på" = to find out. Fixed three-part expression. Past: "fick reda på". One of several "få + particle + på" expressions.'},
+{id:119,cat:'verb',diff:'hard',sv:'Han lyckades inte övertala henne.',en:'He didn\'t manage to persuade her.',note:'"Lyckas" is a deponent: lyckas → lyckades → lyckats. "Lyckas + infinitive" = manage to. "Lyckades inte" = didn\'t manage.'},
+{id:120,cat:'verb',diff:'hard',sv:'Jag förstår mig inte på det.',en:'I can\'t make sense of it.',note:'"Förstå sig på" = to understand / make sense of (emphatic, reflexive). More emphatic than just "förstår". Common: "jag förstår mig inte på teknik".'},
+{id:121,cat:'verb',diff:'hard',sv:'Det stod ingenstans vem som hade gjort det.',en:'It said nowhere who had done it.',note:'"Stå" = to say/state (in written text). "Stod" = past. "Det stod i tidningen" = it said in the newspaper. Very common use of "stå" for written information.'},
+{id:122,cat:'verb',diff:'hard',sv:'Vi hade inte väntat oss det.',en:'We hadn\'t expected that.',note:'"Vänta sig" (reflexive) = to expect. "Hade inte väntat oss" = hadn\'t expected. Don\'t confuse with "vänta på" (to wait for) — completely different!'},
+{id:123,cat:'verb',diff:'hard',sv:'Sluta upp med att klaga!',en:'Stop complaining!',note:'"Sluta upp med att + infinitive" = to stop doing something. "Sluta med" also works. Both need "att" before the next infinitive.'},
+{id:124,cat:'verb',diff:'hard',sv:'Saken verkar ha löst sig.',en:'The matter seems to have resolved itself.',note:'"Lösa sig" = to resolve itself / work itself out. Reflexive. Common: "det löser sig" = it\'ll sort itself out. "Verkar ha" = seems to have.'},
+{id:125,cat:'verb',diff:'hard',sv:'Han brukar ta sig an svåra uppgifter.',en:'He usually takes on difficult tasks.',note:'"Ta sig an" = to take on / tackle (a task). Reflexive phrasal verb. "Brukar" = usually does (present habitual). "Uppgift" = task/assignment.'},
+// ── HARDER PREPOSITIONS (126-150) ─────────
+{id:126,cat:'prep',diff:'hard',sv:'Jag är osäker på om det stämmer.',en:'I\'m not sure whether that\'s correct.',note:'"Osäker på" = unsure about. Followed by "om" (whether). The preposition "på" stays even before "om". Compare: "säker på att" = sure that.'},
+{id:127,cat:'prep',diff:'hard',sv:'Han är rädd om sin hälsa.',en:'He takes good care of his health.',note:'"Rädd om" = caring about / protective of. Different from "rädd för" (afraid of)! "Var rädd om dig" = Take care of yourself — a warm farewell.'},
+{id:128,cat:'prep',diff:'hard',sv:'Jag har svårt för matematik.',en:'I struggle with / find mathematics difficult.',note:'"Ha svårt för" = to find something difficult. Compare: "ha lätt för" = to find easy. Neither uses "med"! The "för" after "svårt/lätt" is a fixed preposition.'},
+{id:129,cat:'prep',diff:'hard',sv:'Hon ser fram emot semestern.',en:'She\'s looking forward to the holiday.',note:'"Se fram emot" = to look forward to. "Emot" here = towards (in anticipation). Very common expression — both in speech and writing (emails etc.).'},
+{id:130,cat:'prep',diff:'hard',sv:'Jag är tacksam för din hjälp.',en:'I\'m grateful for your help.',note:'"Tacksam för" = grateful for (a thing). "Tacksam mot" = grateful towards (a person). The preposition shifts depending on whether you follow it with a thing or a person.'},
+{id:131,cat:'prep',diff:'hard',sv:'Det skiljer sig från det andra.',en:'It differs from the other one.',note:'"Skilja sig från" = to differ from. Reflexive. "Skiljer sig åt" = they differ from each other. "Skilsmässa" (divorce) comes from the same root.'},
+{id:132,cat:'prep',diff:'hard',sv:'Vi är mitt uppe i projektet.',en:'We\'re right in the middle of the project.',note:'"Mitt uppe i" = right in the middle of (an ongoing activity). "Uppe" adds the sense of active engagement. "Mitt i" (without "uppe") = in the middle of a place or time.'},
+{id:133,cat:'prep',diff:'hard',sv:'Han är känd för sin humor.',en:'He\'s known for his sense of humour.',note:'"Känd för" = known for. "Känd som" = known as (a title/role). "Han är känd som skådespelaren X" = He\'s known as actor X. Different prepositions, different meanings.'},
+{id:134,cat:'prep',diff:'hard',sv:'Jag håller med dig.',en:'I agree with you.',note:'"Hålla med" = to agree with. No preposition after "med" — just "hålla med dig". For agreeing about something specific: "hålla med om det" = agree about it.'},
+{id:135,cat:'prep',diff:'hard',sv:'Hon klarade sig utan hjälp.',en:'She managed without (any) help.',note:'"Klara sig utan" = to manage without. "Utan" = without. "Klara sig" = to manage/cope. "Klarade sig" = managed (past). Very useful in many contexts.'},
+{id:136,cat:'prep',diff:'hard',sv:'Vi pratade länge i telefon.',en:'We talked for a long time on the phone.',note:'"I telefon" = on the phone (when talking). Not "på telefon" for the act itself — though "på telefon" works for how someone sounded: "lät ledsen på telefon".'},
+{id:137,cat:'prep',diff:'hard',sv:'Jag är dålig på att hålla kontakten.',en:'I\'m bad at keeping in touch.',note:'"Dålig på att" = bad at doing. "Hålla kontakten" = to keep in touch. Parallel with "bra på att" — both use "på att" before an infinitive.'},
+{id:138,cat:'prep',diff:'hard',sv:'Det är svårt att leva upp till förväntningarna.',en:'It\'s hard to live up to the expectations.',note:'"Leva upp till" = to live up to. "Förväntningarna" = the expectations (definite plural). Very common in both speech and writing.'},
+{id:139,cat:'prep',diff:'hard',sv:'Hon kämpar mot sjukdomen.',en:'She\'s fighting against the illness.',note:'"Kämpa mot" = to fight against. "Mot" = against (opposition). Compare: "kämpa för" = to fight for (a cause). The preposition signals opposing vs. advocating.'},
+{id:140,cat:'prep',diff:'hard',sv:'Han satte sig in i ämnet.',en:'He familiarised himself with the subject.',note:'"Sätta sig in i" = to familiarise oneself with / get into a topic in depth. "In i" here signals going deep. Very useful academic/professional expression.'},
+{id:141,cat:'prep',diff:'hard',sv:'Vi stod inför ett svårt beslut.',en:'We faced a difficult decision.',note:'"Stå inför" = to face / be confronted with. "Inför" = in front of (figurative). Often used for challenges, deadlines, decisions. More formal than "stå inför".'},
+{id:142,cat:'prep',diff:'hard',sv:'Det är typiskt honom.',en:'That\'s just like him / That\'s typical of him.',note:'"Typiskt + pronoun (no preposition)" = typical of someone. "Det är typiskt honom" not "typiskt för honom" in this construction. Very colloquial.'},
+{id:143,cat:'prep',diff:'hard',sv:'Hon är van att jobba under press.',en:'She\'s used to working under pressure.',note:'"Van att" + infinitive = used to doing something. Compare "van vid" + noun. "Under press" = under pressure — the preposition "under" is correct here, not "i".'},
+{id:144,cat:'prep',diff:'hard',sv:'Det är upp till dig.',en:'It\'s up to you.',note:'"Det är upp till" + person = it\'s up to (someone). "Upp till" is idiomatic. "Det är upp till dig att bestämma" = it\'s up to you to decide.'},
+{id:145,cat:'prep',diff:'hard',sv:'Jag är glad åt att det löste sig.',en:'I\'m glad (that) it worked out.',note:'"Glad åt" = glad about (a specific outcome). "Glad över" also works. "Glad för" = glad because of. These three overlap but have slightly different nuances.'},
+{id:146,cat:'prep',diff:'hard',sv:'Det är inget att oroa sig för.',en:'There\'s nothing to worry about.',note:'"Oroa sig för" = to worry about. Reflexive with "för". "Oroa sig" without "för" = to worry generally. "Oroa dig inte" = Don\'t worry.'},
+{id:147,cat:'prep',diff:'hard',sv:'Han är nyfiken på vad som händer.',en:'He\'s curious about what\'s happening.',note:'"Nyfiken på" = curious about. Always "på" — not "om" or "i". "Vad som händer" = what\'s happening (indirect question, normal word order).'},
+{id:148,cat:'prep',diff:'hard',sv:'Vi sitter fast i trafiken.',en:'We\'re stuck in traffic.',note:'"Sitta fast" = to be stuck. "Fast i" = stuck in. Compare "fastna i" (to get stuck in). "Sitta fast" emphasises the current stuck state.'},
+{id:149,cat:'prep',diff:'hard',sv:'Jag är ledsen för att jag var sen.',en:'I\'m sorry for being late.',note:'"Ledsen för" = sorry for/about (a specific thing). Don\'t confuse with "ledsen över" (sad about). "Förlåt att jag var sen" is a more direct apology.'},
+{id:150,cat:'prep',diff:'hard',sv:'Hon ställde sig bakom hans beslut.',en:'She got behind / supported his decision.',note:'"Ställa sig bakom" = to get behind / support. Both literal and figurative. "Bakom" = behind. "Stå bakom" = to stand behind (ongoing support).'},
+// ── HARDER NOUN DECLENSION (151-170) ──────
+{id:151,cat:'noun',diff:'hard',sv:'Det uppstod ett missförstånd.',en:'A misunderstanding arose.',note:'"Missförstånd" is ett-word, zero plural: ett missförstånd → missförståndet → missförstånd → missförstånden. "Uppstå" = to arise: uppstår → uppstod → uppstått.'},
+{id:152,cat:'noun',diff:'hard',sv:'Vi behöver mer information om problemet.',en:'We need more information about the problem.',note:'"Problem" is a loanword: ett problem → problemet → problem (zero plural) → problemen. Many Latin/Greek loanwords keep zero plural in Swedish.'},
+{id:153,cat:'noun',diff:'hard',sv:'Det finns flera museer i stan.',en:'There are several museums in town.',note:'"Museum" → museer (plural). Ett museum → museet → museer → museerna. Greek/Latin loanwords often form plural in -er rather than zero.'},
+{id:154,cat:'noun',diff:'hard',sv:'Förhållandena på jobbet har förbättrats.',en:'Conditions at work have improved.',note:'"Förhållande" (ett-word): förhållandet → förhållanden → förhållandena. Also means "relationship" — context distinguishes. Plural -n common for ett-words ending in unstressed -e.'},
+{id:155,cat:'noun',diff:'hard',sv:'Journalisterna ställde svåra frågor.',en:'The journalists asked difficult questions.',note:'"Journalist": en journalist → journalisten → journalister → journalisterna. Note: "ställa frågor" = to ask questions — not "fråga frågor". The verb "ställa" is required.'},
+{id:156,cat:'noun',diff:'hard',sv:'Butiken öppnas klockan tio.',en:'The shop opens at ten.',note:'"Öppnas" is one of the most natural uses of the -s form in everyday speech — it\'s how shops, offices, and venues announce opening times. "Öppnas" = opens/will open. Not written-only at all in this context.'},
+{id:157,cat:'noun',diff:'hard',sv:'Hennes kunskaper i svenska är imponerande.',en:'Her knowledge of Swedish is impressive.',note:'"Kunskap" → kunskaper. Often plural in Swedish where English uses singular "knowledge". "Kunskaper i" = knowledge of (a subject/language). Note "i", not "om".'},
+{id:158,cat:'noun',diff:'hard',sv:'De tog beslutet utan att fråga oss.',en:'They made the decision without asking us.',note:'"Beslut" ett-word, zero plural: ett beslut → beslutet → beslut → besluten. "Utan att + infinitive" = without doing. Active voice here — much more natural in speech than passive "beslutet togs".'},
+{id:159,cat:'noun',diff:'hard',sv:'Var befinner du dig just nu?',en:'Where are you right now?',note:'"Befinna sig" = to be (at a location). Reflexive verb. "Var befinner du dig?" is the natural spoken way to ask where someone is — more precise than "var är du?" which can also mean how are you in some dialects. Also: "befinner sig i en svår situation" = is in a difficult situation.'},
+{id:160,cat:'noun',diff:'hard',sv:'Vi är inte riktigt överens om det.',en:'We\'re not quite in agreement about it. / We don\'t quite see eye to eye on it.',note:'"Inte överens" = not in agreement. Much more natural in speech than "det råder oenighet". "Vi är oense" also works. "Råda" + "oenighet" is pure newspaper language — nobody says it out loud.'},
+{id:161,cat:'noun',diff:'hard',sv:'Deras vänskap har hållit i många år.',en:'Their friendship has lasted for many years.',note:'"Vänskap" (ett-word): vänskapen. Abstract nouns with -skap are ett-gender: vänskap, partnerskap, ledarskap. "Hållit i" = has lasted. Much more natural context for teaching -skap nouns than corporate news.'},
+{id:162,cat:'noun',diff:'hard',sv:'Grunderna i matlagning är inte så svåra.',en:'The basics of cooking aren\'t that hard.',note:'"Grund" (en-word): en grund → grunder → grunderna. "Grunderna i" = the basics of. "Matlagning" = cooking. Teaches the -er plural and "grunderna" (definite plural). Natural spoken sentence.'},
+{id:163,cat:'noun',diff:'hard',sv:'Dina åsikter spelar roll för mig.',en:'Your opinions matter to me.',note:'"Åsikt" (en-word): en åsikt → åsikten → åsikter → åsikterna. "Dina åsikter" = your opinions. "Spela roll" = to matter (lit: play a role). "Spelar roll för mig" = matters to me. Much more personal and spoken than a generic slogan.'},
+{id:164,cat:'noun',diff:'hard',sv:'Trots svårigheterna lyckades de.',en:'Despite the difficulties, they succeeded.',note:'"Svårighet" → svårigheter (-het noun, -er plural). "Trots" + definite noun = despite the. "Lyckades" = succeeded (deponent: lyckas/lyckades/lyckats).'},
+{id:165,cat:'noun',diff:'hard',sv:'Saken är den att vi inte har råd.',en:'The thing is that we can\'t afford it.',note:'"Saken är den att" = the thing is that. Fixed expression using definite form "saken". "Har råd" = can afford (literally "have means"). Very common spoken construction.'},
+{id:166,cat:'noun',diff:'hard',sv:'Det är en ganska knepig fråga faktiskt.',en:'It\'s actually quite a tricky question.',note:'"Knepig" = tricky/fiddly (very colloquial, much more natural than "komplex" in speech). "Faktiskt" softens and adds a conversational feel. Swedish compounds like "frågeställning" exist but sound written — in speech, just say "fråga".'},
+{id:167,cat:'noun',diff:'hard',sv:'Det händer mycket nytt på jobbet just nu.',en:'A lot of new stuff is happening at work right now.',note:'"Händer" = is happening (from "hända"). "Mycket nytt" = a lot of new things. "På jobbet" = at work. This teaches the same grammar as "förändringar i samhället" but in a way people actually talk. "Hända" is the spoken go-to instead of "ske".'},
+{id:168,cat:'noun',diff:'hard',sv:'Vad är alternativet?',en:'What\'s the alternative?',note:'"Alternativ" is ett-word: ett alternativ → alternativet → alternativ (zero plural) → alternativen. Very common in meetings and formal contexts.'},
+{id:169,cat:'noun',diff:'hard',sv:'Läget är allvarligt.',en:'The situation is serious.',note:'"Läge" (ett-word) = situation/position: ett läge → läget → lägen → lägena. "Allvarligt" = serious (ett-form of "allvarlig"). "Läget" is very common in news and spoken Swedish.'},
+{id:170,cat:'noun',diff:'hard',sv:'Det blir ofta missförstånd när man skriver.',en:'Misunderstandings often happen when you text.',note:'"Missförstånd" (ett-word, zero plural): ett missförstånd → missförståndet → missförstånd → missförstånden. "Det blir" = there become / it turns into — much more natural in speech than "uppstår". "När man skriver" = when you write/text.'},
+// ── HARDER WORD ORDER (171-190) ───────────
+{id:171,cat:'word',diff:'hard',sv:'Ju mer jag tänker på det, desto mer komplicerat blir det.',en:'The more I think about it, the more complicated it gets.',note:'"Ju... desto..." = the... the... V2 in main clause: "blir det" (not "det blir") because "desto mer komplicerat" is fronted. Both clauses follow V2.'},
+{id:172,cat:'word',diff:'hard',sv:'Varken han eller hon visste vad som hade hänt.',en:'Neither he nor she knew what had happened.',note:'"Varken... eller..." = neither... nor... When "varken" fronts, V2 applies. "Vad som hade hänt" = what had happened (indirect question, normal word order).'},
+{id:173,cat:'word',diff:'hard',sv:'Hade jag vetat det, hade jag aldrig gått dit.',en:'Had I known that, I would never have gone there.',note:'Inverted conditional: drop "om" and invert. "Hade jag vetat" = If I had known. Formal/literary but used in speech too for emphasis.'},
+{id:174,cat:'word',diff:'hard',sv:'Det finns de som inte håller med.',en:'There are those who disagree.',note:'"Det finns de som" = there are those who. "De som" = those who (relative pronoun). Embedded relative clause uses normal word order: "som inte håller med" (not "som håller inte med").'},
+{id:175,cat:'word',diff:'hard',sv:'Frågan är om vi klarar det.',en:'The question is whether we\'ll manage it.',note:'"Frågan är om" = the question is whether. After "är", indirect question uses subject-first order: "om vi klarar det" NOT "om klarar vi". Equational sentences follow embedded question rules.'},
+{id:176,cat:'word',diff:'hard',sv:'Det är dags att vi tar tag i det.',en:'It\'s time we tackled it / got on with it.',note:'"Ta tag i" = to tackle / get to grips with. "Det är dags att" = it\'s time to. Subordinate clause "vi tar tag i det" uses normal order after "att".'},
+{id:177,cat:'word',diff:'hard',sv:'Så fort hon kom in slutade alla prata.',en:'As soon as she walked in, everyone stopped talking.',note:'"Så fort" = as soon as (colloquial; "så snart" is more formal). Fronted time clause triggers V2 in main: "slutade alla" not "alla slutade".'},
+{id:178,cat:'word',diff:'hard',sv:'Han frågade var vi hade lagt nycklarna.',en:'He asked where we had put the keys.',note:'"Var" in indirect questions = where (no inversion). "Hade lagt" = had put (past perfect). Subordinate order: "vi hade lagt" not "hade vi lagt".'},
+{id:179,cat:'word',diff:'hard',sv:'Oavsett vad som händer stannar jag här.',en:'Whatever happens, I\'m staying here.',note:'"Oavsett vad som händer" = whatever happens. "Vad som" in embedded clauses = what (relative). Fronted concessive clause triggers V2 in main: "stannar jag".'},
+{id:180,cat:'word',diff:'hard',sv:'Inte förrän vi kom hem insåg vi misstaget.',en:'Not until we got home did we realise the mistake.',note:'"Inte förrän" = not until. Fronted negative time clause triggers V2 in main clause: "insåg vi". Very formal but grammatically important to recognise.'},
+{id:181,cat:'word',diff:'hard',sv:'Det är just det som stör mig.',en:'That\'s exactly what bothers me.',note:'"Just det" = exactly that. Cleft: "Det är just det som..." — "som" required in the relative clause. "Just" for emphasis with demonstratives is very common in speech.'},
+{id:182,cat:'word',diff:'hard',sv:'Vem som helst kan göra det.',en:'Anyone can do it.',note:'"Vem som helst" = anyone/whoever. "Som helst" after a question word = -ever: "vad som helst" (whatever), "var som helst" (wherever), "hur som helst" (however).'},
+{id:183,cat:'word',diff:'hard',sv:'Det verkar som om någon har öppnat brevet.',en:'It seems as if someone has opened the letter.',note:'"Verkar som om" = seems as if. Embedded clause after "om" uses normal word order. "Som att" also works but is more informal.'},
+{id:184,cat:'word',diff:'hard',sv:'Nog kan man förstå att hon är trött.',en:'One can certainly understand that she\'s tired.',note:'Fronting "nog" triggers V2 inversion: "kan man". "Nog" here = certainly/admittedly (concessive). Different from "nog" = probably. More formal/literary use.'},
+{id:185,cat:'word',diff:'hard',sv:'Det är på grund av det som allting gick fel.',en:'It\'s because of that that everything went wrong.',note:'Cleft + causal phrase: "Det är på grund av det som...". The "som" after a causal phrase in a cleft sentence is required but very easy to accidentally drop.'},
+{id:186,cat:'word',diff:'hard',sv:'Helst av allt skulle jag vilja sova.',en:'More than anything, I\'d love to sleep.',note:'"Helst av allt" = more than anything / most of all. Fronted adverb triggers V2: "skulle jag". "Helst" = preferably/ideally — superlative of "gärna".'},
+{id:187,cat:'word',diff:'hard',sv:'Det är så jag brukar göra.',en:'That\'s how I usually do it.',note:'"Det är så... som/att" = that\'s how... The relative "som" can be dropped here. "Brukar göra" = usually does — habitual present. Very common spoken structure.'},
+{id:188,cat:'word',diff:'hard',sv:'Skulle du behöva hjälp ringer du bara.',en:'Should you need help, just call.',note:'Inverted conditional with "skulle": "Skulle du behöva" = should you need. More polite and formal than "om du behöver". Common in instructions and polite offers.'},
+{id:189,cat:'word',diff:'hard',sv:'Det är förmodligen så att hon har rätt.',en:'It\'s probably the case that she\'s right.',note:'"Det är förmodligen så att" = it is probably the case that. "Förmodligen" goes after the verb in the main clause. Long cleft constructions are common in formal speech.'},
+{id:190,cat:'word',diff:'hard',sv:'Vare sig det regnar eller skiner, går jag ut.',en:'Whether it rains or shines, I go out.',note:'"Vare sig... eller..." = whether... or... (formal/written). Fronted clause triggers V2 in main: "går jag". Literary but worth recognising.'},
+// ── ADJECTIVE-PREPOSITION PAIRS (ids 306-345) ──
+{id:306,cat:'prep',diff:'hard',sv:'Hon är väldigt bra på att improvisera.',en:'She is very good at improvising.',note:'"Bra på att" = good at (doing sth). The preposition "på" is fixed — never "bra att" or "bra med att". Same pattern: "duktig på att", "skicklig på att".'},
+{id:307,cat:'prep',diff:'hard',sv:'Han är riktigt duktig på att förhandla.',en:'He is really good at negotiating.',note:'"Duktig på att" = good/skilled at. Same "på att" pattern as "bra på att". Both mean competence at an activity.'},
+{id:308,cat:'prep',diff:'hard',sv:'Jag är inte van vid det här vädret.',en:'I\'m not used to this weather.',note:'"Van vid" = accustomed/used to. Fixed pair. NOT "van på" or "van med". When followed by an infinitive, use "van att": "jag är van att jobba sent".'},
+{id:309,cat:'prep',diff:'hard',sv:'Han är van att arbeta under press.',en:'He is used to working under pressure.',note:'"Van att" + infinitive = used to doing. Compare: "van vid" + noun. Both mean accustomed to, but the construction changes depending on what follows.'},
+{id:310,cat:'prep',diff:'hard',sv:'De är beroende av varandra.',en:'They are dependent on each other.',note:'"Beroende av" = dependent on. NOT "beroende om". "Om" = if/about. Easy to confuse — think: to depend ON someone = beroende AV.'},
+{id:311,cat:'prep',diff:'hard',sv:'Var rädd om dig.',en:'Take care of yourself. / Look after yourself.',note:'"Rädd om" = careful with, taking care of. NOT the same as "rädd för" = afraid of. "Var rädd om dig" = look after yourself. "Jag är rädd för spindlar" = I\'m afraid of spiders.'},
+{id:312,cat:'prep',diff:'hard',sv:'Han är rädd för att misslyckas.',en:'He is afraid of failing.',note:'"Rädd för" = afraid of. Contrast with "rädd om" = careful/protective of. Two different meanings, two different prepositions.'},
+{id:313,cat:'prep',diff:'hard',sv:'Jag är helt uppslukad av den här serien.',en:'I\'m completely hooked on this series. / I\'m totally absorbed by this show.',note:'"Uppslukad av" = absorbed by / hooked on. Very common for books, series, games. "Jag är uppslukad" = I\'m hooked. The "av" marks what you\'re absorbed by. The silent -d in "uppslukad" — same pattern as "nöjd", "stressad", "trött".'},
+{id:314,cat:'prep',diff:'hard',sv:'Jag är trött på den här diskussionen.',en:'I\'m tired of this discussion.',note:'"Trött på" = tired of. NOT "trött av" (that would mean physically tired from). "Trött av cykling" = tired FROM cycling. "Trött på honom" = tired OF him.'},
+{id:315,cat:'prep',diff:'hard',sv:'Är du sugen på att göra något ikväll?',en:'Are you up for doing something tonight? / Fancy doing something tonight?',note:'"Sugen på" = in the mood for / up for. One of the most useful colloquial adj-prep combos. "Jag är sugen på pizza" = I fancy pizza. "Är du sugen?" = you up for it? Completely natural in everyday spoken Swedish.'},
+{id:316,cat:'prep',diff:'hard',sv:'Hon är förvånad över hans reaktion.',en:'She is surprised by/at his reaction.',note:'"Förvånad över" = surprised at/by. Also "förvånad av" is sometimes used. "Över" is more standard with emotional states about things. Compare: "glad över", "ledsen över", "stolt över".'},
+{id:317,cat:'prep',diff:'hard',sv:'Vi är stolta över vad ni har åstadkommit.',en:'We are proud of what you have achieved.',note:'"Stolt över" = proud of. NOT "stolt på" or "stolt av". "Åstadkomma" = to achieve/accomplish — formal verb worth knowing.'},
+{id:318,cat:'prep',diff:'hard',sv:'Hon är besviken på honom.',en:'She is disappointed in/with him.',note:'"Besviken på" = disappointed in (a person). "Besviken över" = disappointed about (a situation/thing). Person → "på", thing/event → "över". Worth memorising both.'},
+{id:319,cat:'prep',diff:'hard',sv:'Jag är lite upprörd över det som hände.',en:'I\'m a bit upset about what happened.',note:'"Upprörd över" = upset/agitated about. Very common and natural in speech. "Lite" softens it appropriately. Compare: "ledsen över" (sad about), "förvånad över" (surprised at). All use "över" for emotional reactions to events.'},
+{id:320,cat:'prep',diff:'hard',sv:'Han är ansvarig för projektet.',en:'He is responsible for the project.',note:'"Ansvarig för" = responsible for. Also: "ta ansvar för" = to take responsibility for. "Ansvar" is the noun form.'},
+{id:321,cat:'prep',diff:'hard',sv:'Hon är riktigt skicklig på att läsa av folk.',en:'She\'s really good at reading people.',note:'"Skicklig på att" = skilled at (doing something) — same "på att" pattern as "bra på att" and "duktig på att". "Läsa av" = to read (someone\'s emotions/intentions). Very useful natural phrase. All three — bra/duktig/skicklig — take "på att" + infinitive.'},
+{id:322,cat:'prep',diff:'hard',sv:'Är du bekant med det här systemet?',en:'Are you familiar with this system?',note:'"Bekant med" = familiar with / acquainted with. Used for both people and things. "Jag är bekant med honom" = I know him (socially). "Bekant med systemet" = familiar with the system.'},
+{id:323,cat:'prep',diff:'hard',sv:'Han är säker på att hon kommer.',en:'He is sure/certain that she will come.',note:'"Säker på" = sure of/about. NOT "säker att" in this construction. Also: "osäker på" = unsure about. "Säker på saken" = certain about the matter.'},
+{id:324,cat:'prep',diff:'hard',sv:'Jag är medveten om problemen.',en:'I am aware of the problems.',note:'"Medveten om" = aware of. NOT "medveten av". Fixed pair — memorise as a chunk. Also: "omedveten om" = unaware of.'},
+{id:325,cat:'prep',diff:'hard',sv:'Han är orolig för sin framtid.',en:'He is worried/anxious about his future.',note:'"Orolig för" = worried about. NOT "orolig om". Also: "oro för" (noun) = worry/concern about. "Jag hyser oro för..." = I have concerns about... (formal).'},
+{id:326,cat:'prep',diff:'hard',sv:'Hon är imponerad av hans kunskaper.',en:'She is impressed by his knowledge.',note:'"Imponerad av" = impressed by. The agent (who/what impresses) takes "av". Also: "Det imponerar mig att..." = it impresses me that...'},
+{id:327,cat:'prep',diff:'hard',sv:'Jag är glad över att höra det.',en:'I\'m happy/glad to hear that.',note:'"Glad över" = happy about. When followed by att + infinitive, it expresses reaction to something. Compare: "glad för" is also used but "glad över" is more standard for reactions.'},
+{id:328,cat:'prep',diff:'hard',sv:'Han är ivrig att sätta igång.',en:'He is eager to get started.',note:'"Ivrig att" = eager to + infinitive. Fixed with "att" before infinitive. Also: "angelägen om att" = eager/keen to (more formal). "Sätta igång" = to get started.'},
+{id:329,cat:'prep',diff:'hard',sv:'Är du beredd på det?',en:'Are you prepared for that? / Ready for it?',note:'"Beredd på" = ready for / prepared for (a situation). "Beredd att" = ready to (do something). Two different constructions: noun → "på", infinitive → "att".'},
+{id:330,cat:'prep',diff:'hard',sv:'Han är gift med en arkitekt.',en:'He is married to an architect.',note:'"Gift med" = married to. Swedish uses "med" (with) where English uses "to". Also: "skild från" = divorced from. Common area of confusion.'},
+{id:331,cat:'prep',diff:'hard',sv:'Hon är skild från sin förra man.',en:'She is divorced from her ex-husband.',note:'"Skild från" = divorced from. Note "från" (from). Compare: "gift med" = married to. The prepositions are opposites: med/from.'},
+{id:332,cat:'prep',diff:'hard',sv:'Jag är van vid att folk ifrågasätter mig.',en:'I\'m used to people questioning me.',note:'"Van vid att" + clause = used to people doing sth. When the subject of the subordinate clause is different, you need "att" + new subject + verb, not an infinitive.'},
+{id:333,cat:'prep',diff:'hard',sv:'Hon är skyldig till bedrägeri.',en:'She is guilty of fraud.',note:'"Skyldig till" = guilty of (a crime). Compare: "skyldig att" = obliged/supposed to (do something). Completely different meanings depending on preposition.'},
+{id:334,cat:'prep',diff:'hard',sv:'Du är skyldig att anmäla det.',en:'You are obliged to report it.',note:'"Skyldig att" = obliged/required to. Compare "skyldig till brott" = guilty of a crime. Context makes it clear, but the preposition changes the meaning entirely.'},
+{id:335,cat:'prep',diff:'hard',sv:'Han är lättad över beskedet.',en:'He is relieved by/at the news.',note:'"Lättad över" = relieved about. "Besked" = news/information/decision. "Lättad av" also occurs but "över" is standard with emotional reactions to events.'},
+{id:336,cat:'prep',diff:'hard',sv:'Jag är förtjust i den här staden.',en:'I\'m fond of / in love with this city.',note:'"Förtjust i" = fond of, charmed by. NOT "förtjust på". A fixed idiom — "förtjust i" expresses affection. "Kär i" = in love with (romantic). Don\'t mix them up.'},
+{id:337,cat:'prep',diff:'hard',sv:'Det beror på vad du menar.',en:'It depends on what you mean.',note:'"Bero på" = depend on. Always "på" — never "bero av" or "bero om". "Det beror" = it depends (common standalone answer in Swedish).'},
+{id:338,cat:'prep',diff:'hard',sv:'Hon längtar efter semester.',en:'She longs for / is longing for a holiday.',note:'"Längta efter" = to long for. Always "efter". Also: "sakna" = to miss (someone/something). Both express longing but "längta efter" is more about anticipation of something future.'},
+{id:339,cat:'prep',diff:'hard',sv:'Han trivs bra på sitt nya jobb.',en:'He is happy / doing well at his new job.',note:'"Trivas på" = to enjoy oneself, feel comfortable at (a place/job). "Jag trivs här" = I like it here. "Trivs" is a deponent verb — looks passive but is active in meaning.'},
+{id:340,cat:'prep',diff:'hard',sv:'Vi är överens om det.',en:'We agree on that.',note:'"Överens om" = in agreement about. "Komma överens om" = to agree on. NOT "överens med" for the topic you agree on — "med" is for the person you agree with: "jag håller med dig".'},
+{id:341,cat:'prep',diff:'hard',sv:'Jag håller med dig om det.',en:'I agree with you on that.',note:'"Hålla med om" = to agree with (someone) about (something). "Håller med dig" = agree with you. "Om" introduces the topic. Common to drop "om" in casual speech.'},
+{id:342,cat:'prep',diff:'hard',sv:'Han är dömd till fängelse.',en:'He is sentenced to prison.',note:'"Dömd till" = sentenced to. Fixed legal phrase. Also: "dömd att" = destined to (doom/fate): "dömd att misslyckas" = doomed to fail. Different "dömd" constructions.'},
+{id:343,cat:'prep',diff:'hard',sv:'Är du intresserad av att jobba hos oss?',en:'Are you interested in working with us?',note:'"Intresserad av att" + infinitive = interested in doing. NOT "intresserad i att". "Hos oss" = with/at us (company) — "hos" used for entities you work/stay at, not "med" or "på" here.'},
+{id:344,cat:'prep',diff:'hard',sv:'Jag är förvånad över att han inte ringde.',en:'I\'m surprised that he didn\'t call.',note:'"Förvånad över att" + clause = surprised that. "Att" introduces the embedded clause — normal V2 applies inside: "att han inte ringde" (subject before verb, negation before finite verb).'},
+{id:345,cat:'prep',diff:'hard',sv:'Det är typiskt för honom att glömma.',en:'It\'s typical of him to forget.',note:'"Typiskt för" = typical of. NOT "typiskt med" or "typiskt att" in this meaning. "Typiskt!" as an exclamation = typical! (standalone). "För" marks whose trait it is.'},
+
+// ── IRREGULAR SUPINES (ids 346-375) ──
+{id:346,cat:'verb',diff:'hard',sv:'Har du skrivit ett mejl till dem?',en:'Have you written an email to them?',note:'"Skriva" → supine: "skrivit". NOT "skrivat". Strong verb group: skriver → skrev → skrivit. Many learners add -at here by analogy with weak verbs. Rule: if past tense has vowel change, supine ends in -it.'},
+{id:347,cat:'verb',diff:'hard',sv:'De hade bjudit hela familjen på middag.',en:'They had invited the whole family to dinner.',note:'"Bjuda" → supine: "bjudit". NOT "bjudat". Past tense: bjöd. Supine: bjudit. "Bjuda på" = to treat/invite. "Bjuda in" = to invite in. Both take "bjudit" in perfect.'},
+{id:348,cat:'verb',diff:'hard',sv:'Han hade sprungit hela vägen hem.',en:'He had run the whole way home.',note:'"Springa" → supine: "sprungit". NOT "sprungat" or "springat". Past: sprang. Supine: sprungit. One of the most commonly misspelled supines.'},
+{id:349,cat:'verb',diff:'hard',sv:'Har du suttit och väntat länge?',en:'Have you been sitting and waiting long?',note:'"Sitta" → supine: "suttit". NOT "sittit" or "suttit" confusion. Past: satt. Supine: suttit. "Sitta och vänta" = sit and wait (ongoing action with two verbs).'},
+{id:350,cat:'verb',diff:'hard',sv:'Boken hade legat där i veckor.',en:'The book had been lying there for weeks.',note:'"Ligga" → supine: "legat". NOT "liggat". Past: låg. Supine: legat. Compare: "lägga" (to lay/put) → lade → lagt. Two different verbs often confused.'},
+{id:351,cat:'verb',diff:'hard',sv:'Han hade stått i kö i en timme.',en:'He had been standing in the queue for an hour.',note:'"Stå" → supine: "stått". Past: stod. Supine: stått. Compare: "ställa" (to place) → ställde → ställt. Three position verbs: sitta/suttit, ligga/legat, stå/stått.'},
+{id:352,cat:'verb',diff:'hard',sv:'Har du hunnit läsa rapporten?',en:'Have you had time to read the report? / Have you managed to read the report?',note:'"Hinna" → supine: "hunnit". Past: hann. "Hinna" expresses having enough time or managing to do something. "Jag hinner inte" = I don\'t have time. Very common in Swedish.'},
+{id:353,cat:'verb',diff:'hard',sv:'Hon hade funnit en lösning.',en:'She had found a solution.',note:'"Finna" → supine: "funnit". Past: fann. "Finna" is more formal than "hitta" (to find). "Hitta" → hittade → hittat (regular). In formal/written Swedish "finna" is preferred.'},
+{id:354,cat:'verb',diff:'hard',sv:'De hade vunnit tre matcher i rad.',en:'They had won three matches in a row.',note:'"Vinna" → supine: "vunnit". Past: vann. Supine: vunnit. "I rad" = in a row. Also: "förlora" = to lose (regular). Pair them: vinna/vunnit — förlora/förlorat.'},
+{id:355,cat:'verb',diff:'hard',sv:'Jag har missförstått hela situationen.',en:'I have misunderstood the whole situation.',note:'"Missförstå" → supine: "missförstått". The double -t is critical. "Förstå" → förstått, "missförstå" → missförstått. Compound verbs keep the irregular supine of the base verb.'},
+{id:356,cat:'verb',diff:'hard',sv:'Han hade förstått att det var ett misstag.',en:'He had understood that it was a mistake.',note:'"Förstå" → supine: "förstått". Past: förstod. NOT "förståt" or "förstått" — actually double-t is correct. Base verb "stå" → stod → stått, so "förstå" → förstod → förstått.'},
+{id:357,cat:'verb',diff:'hard',sv:'De har drivit företaget i tjugo år.',en:'They have run/operated the company for twenty years.',note:'"Driva" → supine: "drivit". Past: drev. Common in business contexts: "driva ett företag/projekt/verksamhet". NOT "drivat".'},
+{id:358,cat:'verb',diff:'hard',sv:'Sjön hade frusit till.',en:'The lake had frozen over.',note:'"Frysa" → supine: "frusit". Past: frös. "Frysa till" = to freeze over (completely). "Frysa" alone = to be cold (person) or to freeze (thing). Both use "frusit".'},
+{id:359,cat:'verb',diff:'hard',sv:'Han hade burit väskorna hela vägen.',en:'He had carried the bags the whole way.',note:'"Bära" → supine: "burit". Past: bar. NOT "bärt" or "burat". Common strong verb — the vowel changes bar/burit shows the strong pattern.'},
+{id:360,cat:'verb',diff:'hard',sv:'De hade valt fel person för jobbet.',en:'They had chosen the wrong person for the job.',note:'"Välja" → supine: "valt". Past: valde. NOT "valjt". Despite ending in -de (like a weak verb), "välja" has the strong supine "valt". A classic trap.'},
+{id:361,cat:'verb',diff:'hard',sv:'Har du tagit dina mediciner idag?',en:'Have you taken your medication today?',note:'"Ta" → supine: "tagit". Past: tog. "Ta/tagit" = take. "Ta" is one of the most used verbs — know it well. Also: "ta reda på" = find out, "ta hand om" = take care of.'},
+{id:362,cat:'verb',diff:'hard',sv:'Jag har aldrig sett något liknande.',en:'I have never seen anything like it.',note:'"Se" → supine: "sett". Past: såg. NOT "seet" or "sett" confusion — it IS "sett" (double-t). Compare: "ge" → gav → gett. Short monosyllabic verbs often have double consonant in supine.'},
+{id:363,cat:'verb',diff:'hard',sv:'Hon har gett mycket till den här organisationen.',en:'She has given a lot to this organisation.',note:'"Ge" → supine: "gett" (or "givit" in formal/written). Past: gav. Both "gett" and "givit" are correct — "gett" is spoken, "givit" is written/formal. Know both.'},
+{id:364,cat:'verb',diff:'hard',sv:'Flyget hade flugit in i ett oväder.',en:'The plane had flown into a storm.',note:'"Flyga" → supine: "flugit". Past: flög. NOT "flygat". "Oväder" = storm (literally "bad weather"). Strong irregular verb — flyger/flög/flugit.'},
+{id:365,cat:'verb',diff:'hard',sv:'Han hade skjutit ett mål i sista minuten.',en:'He had scored a goal in the last minute.',note:'"Skjuta" → supine: "skjutit". Past: sköt. "Skjuta mål" = to score (literally to shoot a goal). Also "skjuta upp" = to postpone. NOT "skjutat".'},
+{id:366,cat:'verb',diff:'hard',sv:'Priset hade stigit kraftigt under månaden.',en:'The price had risen sharply during the month.',note:'"Stiga" → supine: "stigit". Past: steg. "Stiga" = to rise/increase (prices, temperature). "Sjunka" = to fall/decrease. Both are strong verbs: sjunka/sjönk/sjunkit.'},
+{id:367,cat:'verb',diff:'hard',sv:'Han hade lidit av sömnproblem i år.',en:'He had suffered from sleep problems for years.',note:'"Lida" → supine: "lidit". Past: led. "Lida av" = to suffer from. Also: "lida brist på" = to lack. Formal register — in everyday speech "ha problem med" is more common.'},
+{id:368,cat:'verb',diff:'hard',sv:'De hade bundit sig till avtalet.',en:'They had committed/bound themselves to the agreement.',note:'"Binda" → supine: "bundit". Past: band. "Binda sig till" = to commit/bind oneself to. "Bindande avtal" = binding agreement. NOT "bindat".'},
+{id:369,cat:'verb',diff:'hard',sv:'Hon hade sjungit i kör sedan barnsben.',en:'She had sung in a choir since childhood.',note:'"Sjunga" → supine: "sjungit". Past: sjöng. "Sedan barnsben" = since childhood (lit. "since child\'s legs" — fixed idiom). NOT "sjungat".'},
+{id:370,cat:'verb',diff:'hard',sv:'Har ni hållit er till budgeten?',en:'Have you kept to / stayed within the budget?',note:'"Hålla" → supine: "hållit". Past: höll. "Hålla sig till" = to stick to / keep to. "Hålla" is extremely versatile: hålla med = agree, hålla på = be in the middle of doing.'},
+{id:371,cat:'verb',diff:'hard',sv:'Avtalet har bestått i femtio år.',en:'The agreement has lasted / stood for fifty years.',note:'"Bestå" → supine: "bestått". Past: bestod. "Bestå av" = to consist of. "Bestå" (intransitive) = to survive/last. Double-t in supine like all "stå" compounds.'},
+{id:372,cat:'verb',diff:'hard',sv:'Problemet har uppstått på grund av ett missförstånd.',en:'The problem has arisen due to a misunderstanding.',note:'"Uppstå" → supine: "uppstått". Past: uppstod. "Uppstå" = to arise/occur/come about. "Missförstånd" = misunderstanding (noun, from "missförstå"). Ett-word: ett missförstånd.'},
+{id:373,cat:'verb',diff:'hard',sv:'Han hade dolt sanningen från oss.',en:'He had concealed/hidden the truth from us.',note:'"Dölja" → supine: "dolt". Past: dolde. Despite looking like a weak verb (dolde), the supine "dolt" is short/strong-style. "Dölja" = to hide/conceal (deliberately). Compare "gömma" = to hide (physically).'},
+{id:374,cat:'verb',diff:'hard',sv:'De hade sålt alla biljetter i förväg.',en:'They had sold all tickets in advance.',note:'"Sälja" → supine: "sålt". Past: sålde. Like "välja/valt", the supine drops the -e. "I förväg" = in advance. NOT "sälljt" or "sällt".'},
+{id:375,cat:'verb',diff:'hard',sv:'Rapporten hade fallit bort i systemet.',en:'The report had disappeared / been lost in the system.',note:'"Falla" → supine: "fallit". Past: föll. "Falla bort" = to get lost/drop out. "Falla" compounds: infalla/infallit, bortfalla/bortfallit. All use -fallit.'},
+
+// ── EPISTEMIC MODALS — must/might/should have (ids 376-385) ──
+{id:376,cat:'modal',diff:'hard',sv:'Hon måste ha glömt mötet.',en:'She must have forgotten the meeting.',note:'"Måste ha" + supine = must have (deduction). NOT "får ha" or "ska ha". Epistemic "must": you\'re reasoning from evidence. "Måste" = must (obligation OR deduction). Context tells you which.'},
+{id:377,cat:'modal',diff:'hard',sv:'Han kan ha missat tåget.',en:'He might have missed the train.',note:'"Kan ha" + supine = might have / could have (possibility). "Kan" for possibility, "måste" for near-certainty. "Han kan ha gjort det" = he might have done it.'},
+{id:378,cat:'modal',diff:'hard',sv:'De borde ha hört av sig tidigare.',en:'They should have been in touch earlier.',note:'"Borde ha" + supine = should have (unfulfilled expectation). "Höra av sig" = to get in touch. "Borde" = should (weaker than "ska"). "Borde ha" always implies something didn\'t happen.'},
+{id:379,cat:'modal',diff:'hard',sv:'Det kan inte ha gått rätt till.',en:'Something must have gone wrong. / It can\'t have gone properly.',note:'"Kan inte ha" = can\'t have (ruled out possibility). The negative epistemic. "Gå rätt till" = to go properly/fairly. Idiomatic — "det gick inte rätt till" = something fishy happened.'},
+{id:380,cat:'modal',diff:'hard',sv:'Hon måste ha haft en bra anledning.',en:'She must have had a good reason.',note:'"Måste ha haft" = must have had. Note: "ha haft" = have had (past perfect in infinitive). Gets complex: måste (modal) + ha (perfect marker) + haft (supine of "ha"). Build it step by step.'},
+{id:381,cat:'modal',diff:'hard',sv:'Det kan ha tagit längre tid än planerat.',en:'It might have taken longer than planned.',note:'"Kan ha tagit" — "ta" → supine: "tagit". Epistemic "kan ha" = might have. "Än planerat" = than planned (participial phrase). Formal but natural in speech too.'},
+{id:382,cat:'modal',diff:'hard',sv:'Han borde ha vetat bättre.',en:'He should have known better.',note:'"Borde ha vetat" — "veta" → supine: "vetat". "Veta" is weak: vet/visste/vetat. "Borde ha" + supine for unfulfilled moral expectation. "Veta bättre" = know better (idiom).'},
+{id:383,cat:'modal',diff:'hard',sv:'Det måste ha kostat en förmögenhet.',en:'It must have cost a fortune.',note:'"Måste ha kostat" — "kosta" → supine: "kostat" (regular weak). "En förmögenhet" = a fortune. Epistemic "måste" — you\'re deducing cost from context. Useful everyday expression.'},
+{id:384,cat:'modal',diff:'hard',sv:'Han kan inte ha menat det.',en:'He can\'t have meant that.',note:'"Kan inte ha menat" — "mena" → supine: "menat". Epistemic negation: you\'re ruling something out. "Mena" = to mean/intend. Compare: "han menar det inte" = he doesn\'t mean it (present).'},
+{id:385,cat:'modal',diff:'hard',sv:'De måste ha kommit medan vi sov.',en:'They must have come while we were sleeping.',note:'"Måste ha kommit" + time clause. "Komma" → supine: "kommit". "Medan vi sov" = while we were sleeping (past tense in time clause, not imperfect). Note: no "hade" in "medan" clauses for past.'},
+
+// ── SPOKEN WORD ORDER (ids 386-395) ──
+{id:386,cat:'word',diff:'hard',sv:'Så länge du trivs spelar det ingen roll vad andra tycker.',en:'As long as you\'re happy, it doesn\'t matter what others think.',note:'"Så länge" = as long as. Two subclauses here: "så länge du trivs" and "vad andra tycker". Main clause in between with V2: "spelar det ingen roll." "Trivs" = enjoy/thrive — very common.'},
+{id:387,cat:'word',diff:'hard',sv:'Vi kan ta det en annan dag om det passar bättre.',en:'We can do it another day if that works better.',note:'"Passa bättre" = to suit better / work better. "Om det passar" = if it works for you. Very common way to reschedule. "Ta det" = take it / do it (casual). Notice "om" clause at the end.'},
+{id:388,cat:'word',diff:'hard',sv:'Ta gärna med dig en jacka ifall det blir kallt.',en:'Feel free to bring a jacket in case it gets cold.',note:'"Ta med dig" = bring (with you). "Gärna" after imperative = feel free to. "Ifall" = in case (spoken version of "i fall att"). "Det blir kallt" = it gets cold. Very natural advice sentence.'},
+{id:389,cat:'word',diff:'hard',sv:'Med tanke på att vi redan är sena kanske vi borde skippa det.',en:'Given that we\'re already late, maybe we should skip it.',note:'"Med tanke på att" = given that / considering that. Natural spoken opener. "Kanske vi borde" = maybe we should. "Skippa" = skip. Notice how "kanske" pushes subject after verb: "kanske vi borde" (not always, but common).'},
+{id:390,cat:'word',diff:'hard',sv:'Så länge alla är med på det kör vi på den planen.',en:'As long as everyone\'s on board, we\'ll go with that plan.',note:'"Vara med på" = to be on board with. "Köra på" = to go with / push ahead with. "Den planen" = that plan (definite). This sentence shows how spoken Swedish chains clauses naturally.'},
+{id:391,cat:'word',diff:'hard',sv:'Det visade sig att hon hade haft rätt hela tiden.',en:'It turned out that she had been right all along.',note:'"Visa sig" = to turn out / reveal itself. "Hade haft rätt" = had been right (past perfect). "Hela tiden" = the whole time / all along. Very common retrospective phrase.'},
+{id:392,cat:'word',diff:'hard',sv:'Som jag sa innan tycker jag vi borde vänta.',en:'Like I said before, I think we should wait.',note:'"Som jag sa" = as/like I said. Fronted relative clause. "Innan" = before. "Tycker jag" = I think — note inversion after "som jag sa innan" (V2 rule). Very natural way to refer back to a previous point.'},
+{id:393,cat:'word',diff:'hard',sv:'Det borde väl vara ganska uppenbart vid det här laget.',en:'It should be pretty obvious by now, right?',note:'"Väl" = right? / I suppose (seeking agreement, softening). "Vid det här laget" = by this point / by now. "Ganska uppenbart" = pretty obvious. "Väl" is one of those small words that makes you sound Swedish.'},
+{id:394,cat:'word',diff:'hard',sv:'Vi fixar det direkt istället för att vänta.',en:'We\'ll sort it out right away instead of waiting.',note:'"Fixa direkt" = sort out right away. "Istället för att + infinitive" = instead of doing. Important construction: "istället för att" always takes infinitive. "Direkt" = right away / immediately (casual).'},
+{id:395,cat:'word',diff:'hard',sv:'När det gäller maten kan jag fixa pizza om ni vill.',en:'As for the food, I can get pizza if you want.',note:'"När det gäller" = when it comes to / as for. Very common topic-fronting phrase in spoken Swedish. Much more natural than "vad gäller" or "beträffande". "Fixa pizza" = get/sort out pizza.'},
+// ── COLLOQUIAL SPOKEN SWEDISH (ids 396-435) ──
+{id:396,cat:'idiom',diff:'easy',sv:'Hur är läget?',en:'How\'s it going? / What\'s up?',note:'"Hur är läget?" = how\'s the situation? Very casual greeting between friends. Even shorter: "Läget?" alone works fine. More informal than "Hur mår du?" which is more sincere/formal.'},
+{id:397,cat:'idiom',diff:'easy',sv:'Det är lugnt.',en:'It\'s cool. / No worries. / All good.',note:'"Det är lugnt" = it\'s calm = no stress. Used to reassure someone or say things are fine. Also a response to "sorry": "Det är lugnt, ingen fara." Very everyday.'},
+{id:398,cat:'idiom',diff:'easy',sv:'Jag orkar inte.',en:'I can\'t be bothered. / I don\'t have the energy.',note:'"Orka" = to have the energy/motivation for something. "Jag orkar inte" = I just can\'t deal with it. Extremely common. "Orkar du?" = can you manage? / you up for it?'},
+{id:399,cat:'idiom',diff:'easy',sv:'Strunta i det.',en:'Forget about it. / Don\'t worry about it.',note:'"Strunta i" = to not care about / ignore / blow off. "Strunta i det" = forget it / let it go. "Jag struntar i vad de tycker" = I don\'t care what they think. Very common.'},
+{id:400,cat:'idiom',diff:'easy',sv:'Kör!',en:'Go for it! / Let\'s do it! / Go ahead!',note:'"Kör!" = drive! but colloquially: go for it / let\'s go. Used to give someone the green light or signal enthusiasm. "Kör på!" = keep going / go ahead. Super common in everyday decisions.'},
+{id:401,cat:'idiom',diff:'easy',sv:'Lägg av!',en:'Stop it! / Come on! / Give me a break!',note:'"Lägga av" = to stop / quit. "Lägg av!" = stop it! Used when someone\'s annoying you or being ridiculous. "Lägg av med det där" = cut that out. Casual but not rude.'},
+{id:402,cat:'idiom',diff:'easy',sv:'Seriöst?',en:'Seriously? / For real?',note:'"Seriöst?" = seriously? Borrowed usage from English influence but totally natural in Swedish now. Also: "På riktigt?" = for real? Both are common reactions to surprising news.'},
+{id:403,cat:'idiom',diff:'easy',sv:'Jag fixar det.',en:'I\'ll sort it out. / I\'ll handle it. / I\'ve got it.',note:'"Fixa" = to fix / sort out / handle. "Jag fixar det" = I\'ll take care of it. Very versatile colloquial verb. "Fixade du biljetter?" = did you sort out tickets?'},
+{id:404,cat:'idiom',diff:'easy',sv:'Det är sjukt bra.',en:'It\'s insanely good. / It\'s sick.',note:'"Sjukt" as intensifier = insanely / incredibly. "Sjukt bra" = insanely good. "Sjukt kul" = so much fun. Works like "crazy" in English slang. Very common among younger speakers.'},
+{id:405,cat:'idiom',diff:'easy',sv:'Hänga med?',en:'Want to come along? / You in? / Want to join?',note:'"Hänga med" = to come along / hang out with. "Hänga med oss?" = want to join us? "Vi hängde" = we hung out. "Hänga" alone = to hang out. Core colloquial phrase.'},
+{id:406,cat:'idiom',diff:'easy',sv:'Ta det lugnt.',en:'Take it easy. / Chill out. / Relax.',note:'"Ta det lugnt" = take it easy. THE standard way to say relax or calm down. "Ta det lugnt, det löser sig" = take it easy, it\'ll work out. Also: "Lugna ner dig" = calm down (a bit more direct/confrontational).'},
+{id:407,cat:'idiom',diff:'easy',sv:'Vi ses! / Vi hörs!',en:'See you! / Talk later! / Speak soon!',note:'"Vi ses" = we\'ll see each other = see you. "Vi hörs" = we\'ll hear each other = talk later (phone/text). "Vi hörs" is used more for text/call contact, "vi ses" for in person. Both very standard.'},
+{id:408,cat:'idiom',diff:'easy',sv:'Ingen fara.',en:'No worries. / No problem. / Don\'t worry.',note:'"Ingen fara" = no danger = no worries. Super common reassurance. Interchangeable with "det är lugnt" and "inga problem". "Ingen fara alls" = absolutely no problem.'},
+{id:409,cat:'idiom',diff:'medium',sv:'Vad håller du på med?',en:'What are you up to? / What are you doing?',note:'"Hålla på med" = to be doing / be busy with. "Vad håller du på med?" can be casual ("what are you up to?") or slightly irritated ("what are you doing?!"). Context and tone decide.'},
+{id:410,cat:'idiom',diff:'medium',sv:'Jag har något på gång.',en:'I\'ve got something going on. / I\'ve got a thing.',note:'"Ha något på gång" = to have something going on / in the works. "Gång" = motion/going. Used for plans, projects, or romantic situations. "Har du något på gång i helgen?" = got plans this weekend?'},
+{id:411,cat:'idiom',diff:'medium',sv:'Svänga förbi senare?',en:'Want to swing by later? / Can you stop by later?',note:'"Svänga förbi" = to swing by / stop by. Casual invite. "Kika in" is similar: "kika in på mig" = pop by my place. Both very natural for casual visits.'},
+{id:412,cat:'idiom',diff:'medium',sv:'Jag pallar inte med det här.',en:'I can\'t deal with this. / I\'m not up for this.',note:'"Palla" = to be up for / have the will to. Usually negative: "jag pallar inte" = I\'m not up for it. More intense than "orkar inte" — implies refusal not just tiredness. Very colloquial.'},
+{id:413,cat:'idiom',diff:'medium',sv:'Det är samma visa.',en:'It\'s the same old story. / Here we go again.',note:'"Samma visa" = same song = same old story. Used when a pattern keeps repeating. "Det är alltid samma visa med honom" = it\'s always the same with him. Very natural.'},
+{id:414,cat:'idiom',diff:'medium',sv:'Jag hänger inte med.',en:'I\'m not following. / I can\'t keep up.',note:'"Hänga med" also means to follow/keep up. "Jag hänger inte med" = I\'m not following the conversation/pace. "Hänger du med?" = are you following? / keeping up? Dual meaning from same phrase.'},
+{id:415,cat:'idiom',diff:'medium',sv:'Det gick åt skogen.',en:'It went to hell. / It all went wrong.',note:'"Gå åt skogen" = go into the forest = go wrong / fall apart. "Hela planen gick åt skogen" = the whole plan fell through. Mild swear-adjacent — perfectly acceptable in company.'},
+{id:416,cat:'idiom',diff:'medium',sv:'Jag är helt slut.',en:'I\'m completely done. / I\'m exhausted.',note:'"Helt slut" = completely finished/exhausted. "Slut" = finished/out. "Jag är slut" = I\'m done/wiped out. Also: "batteriet är slut" = the battery is dead. Same word, context tells you.'},
+{id:417,cat:'idiom',diff:'medium',sv:'Det kom inte fram.',en:'It didn\'t get across. / The message didn\'t land.',note:'"Komma fram" = to arrive / come through / get across. "Det kom inte fram" used for messages that didn\'t arrive, ideas that didn\'t land, or points that got lost. Very common.'},
+{id:418,cat:'idiom',diff:'medium',sv:'Jag är inne på det.',en:'I\'m into it. / I\'m down for that.',note:'"Vara inne på" = to be into / on board with. "Jag är inne på det" = I\'m game / I\'m in. "Är du inne på en tur?" = up for a trip? Very natural for expressing enthusiasm or agreement.'},
+{id:419,cat:'idiom',diff:'medium',sv:'Det hände inget.',en:'Nothing happened. / It was uneventful.',note:'"Det hände inget" = nothing happened. Simple but crucial — "hända" = to happen. Very common for describing a boring evening or reassuring someone. "Hände det nåt?" = anything happen?'},
+{id:420,cat:'idiom',diff:'easy',sv:'Jag vet inte riktigt.',en:'I\'m not really sure. / I don\'t really know.',note:'"Inte riktigt" = not really/quite. "Jag vet inte riktigt vad jag tycker" = I don\'t really know what I think. Very common hedging phrase. "Riktigt" softens the "vet inte" — makes you sound less blunt.'},
+{id:421,cat:'idiom',diff:'medium',sv:'Han drog iväg utan att säga ett ord.',en:'He took off without saying a word.',note:'"Dra iväg" = to head off / take off (informally). "Dra" alone = to leave (colloquial). "Vi drar" = we\'re heading out. "Drog" = past. Very common departure verb in casual speech.'},
+{id:422,cat:'idiom',diff:'medium',sv:'Jag skippar det.',en:'I\'m skipping it. / I\'ll pass on that.',note:'"Skippa" = to skip / pass on. Loanword from English but fully integrated. "Skippa mötet" = skip the meeting. "Ska vi skippa det?" = shall we skip it? Natural across all ages.'},
+{id:423,cat:'idiom',diff:'medium',sv:'Vi smiter tidigare.',en:'We\'re sneaking out early. / We\'re bailing early.',note:'"Smita" = to sneak away / slip out / ditch. "Smita från jobbet" = to sneak out of work. "Vi smiter" = we\'re ditching / making a quiet exit. Slightly playful, not rude.'},
+{id:424,cat:'idiom',diff:'medium',sv:'Det är lite jobbigt just nu.',en:'It\'s a bit rough right now. / Things are a bit tricky.',note:'"Jobbig" = difficult / annoying / rough. One of the most useful Swedish adjectives. "En jobbig person" = a difficult person. "Det är jobbigt" = it\'s tough/rough. "Jobbigt" works as an adverb too.'},
+{id:425,cat:'idiom',diff:'medium',sv:'Hälsa till din syster.',en:'Say hi to your sister (from me).',note:'"Hälsa till" = to say hi to (someone on my behalf). "Hälsa till familjen" = say hi to the family. "Hälsa från mig" = say hi from me. Very common at the end of conversations.'},
+{id:426,cat:'idiom',diff:'medium',sv:'Vi körde på ändå.',en:'We went ahead with it anyway. / We pushed through anyway.',note:'"Köra på" = to push through / go ahead / keep going regardless. "Vi körde på" = we just went for it. Very common for describing persisting despite obstacles or doubt.'},
+{id:427,cat:'idiom',diff:'hard',sv:'Det är typ det värsta jag vet.',en:'It\'s like the worst thing I know. / I hate it more than anything.',note:'"Typ" = like / kind of / sort of. Used constantly as a filler or hedge in spoken Swedish, same as "like" in English. "Det är typ bra" = it\'s like, pretty good. Extremely common in speech.'},
+{id:428,cat:'idiom',diff:'hard',sv:'Han är ju alltid sen, liksom.',en:'He\'s always late, you know. / I mean, he\'s always late.',note:'"Ju" = you know / of course / after all. Marks something as obvious or shared knowledge. "Liksom" = like / you know (softer filler). Both are extremely common spoken particles. Hard to translate directly but essential to sound natural.'},
+{id:429,cat:'idiom',diff:'hard',sv:'Alltså, det förstår jag verkligen inte.',en:'I mean, I really don\'t get that. / Honestly, I just don\'t understand.',note:'"Alltså" = so / I mean / literally. Used as a sentence opener to signal a strong opinion or emphasis. Not the same as "so" in logic — it\'s more like "I mean" or "honestly". Very common spoken filler.'},
+{id:430,cat:'idiom',diff:'hard',sv:'Visst är det konstigt, eller hur?',en:'It is strange, isn\'t it? / Don\'t you think it\'s weird?',note:'"Visst" = surely / certainly (seeking agreement). "Visst?" alone = right? don\'t you think? "Eller hur?" = right? isn\'t it? Both are question tags seeking agreement. "Visst är det" + adj = surely it\'s...'},
+{id:431,cat:'idiom',diff:'hard',sv:'Han har ju inte direkt hjälpt till.',en:'He hasn\'t exactly been helping.',note:'"Inte direkt" = not exactly / hardly. Understated negative. "Det var inte direkt imponerande" = it was hardly impressive. "Ju" reinforces the obviousness. Together: dry, natural Swedish understatement.'},
+{id:432,cat:'idiom',diff:'hard',sv:'Jag är på gång att fixa det.',en:'I\'m in the process of sorting it out. / I\'m working on it.',note:'"På gång att" = in the process of / about to. Slightly different from "håller på att" (actively doing right now). "På gång att" implies movement toward completion. Both very natural.'},
+{id:433,cat:'idiom',diff:'hard',sv:'Det är väl inte hela världen.',en:'It\'s not the end of the world.',note:'"Inte hela världen" = not the whole world = not a big deal. "Det är väl inte hela världen om vi missar det" = it\'s not the end of the world if we miss it. "Väl" softens the statement, making it more laid-back.'},
+{id:434,cat:'idiom',diff:'hard',sv:'Jag fattar inte grejen med det.',en:'I don\'t get the point of it. / I just don\'t see the appeal.',note:'"Grejen med" = the thing about / the deal with. "Fattar inte grejen" = don\'t get what the fuss is about. "Grejen är den att..." = the thing is... Very colloquial. Your Round 1 answer used "hela grejen" — this is the same word.'},
+{id:435,cat:'idiom',diff:'hard',sv:'Det är lite av en grej just nu.',en:'It\'s kind of a big deal right now. / It\'s a bit of a thing at the moment.',note:'"Lite av en grej" = a bit of a thing = something noteworthy/trendy/significant. Understated Swedish way of saying something matters. "Det är lite av en trend" = it\'s quite a trend right now.'},
+]; // end CARD_EXTRA
+
+// Merge
+const CARDS = [...ALL_CARDS, ...CARD_EXTRA];
+
+// ═══════════════════════════════════════════
+//  STORAGE
+// ═══════════════════════════════════════════
+const STORE_KEY = 'swedish_fc_v2';
+
+function loadStore() {
+  try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {cardStates:{},history:[]}; }
+  catch(e) { return {cardStates:{},history:[]}; }
+}
+function saveStore(s) {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(s)); } catch(e){}
+}
+let store = loadStore();
+
+function getState(id) {
+  return store.cardStates[id] || {ease:2.5,interval:0,reps:0,due:0};
+}
+function setState(id, st) {
+  store.cardStates[id] = st;
+  saveStore(store);
+}
+function addHistory(entry) {
+  store.history.push(entry);
+  if (store.history.length > 5000) store.history = store.history.slice(-5000);
+  saveStore(store);
+  updateStreak();
+}
+
+// ═══════════════════════════════════════════
+//  ANKI-STYLE SRS
+// ═══════════════════════════════════════════
+// Learning steps in minutes. New/failed cards go through these before graduating.
+const LEARN_STEPS = [1, 10]; // 1 min, then 10 min
+const GRADUATING_INTERVAL = 1; // days — first real review after learning
+const EASY_INTERVAL = 4; // days — skip learning, go straight to 4 days
+const NEW_PER_DAY = 20;
+
+// Card phases: 'new' | 'learning' | 'review' | 'relearning'
+function getPhase(s) {
+  if (s.reps === 0 && (s.step === undefined || s.step === null) && !s.graduated) return 'new';
+  if (s.step !== undefined && s.step !== null && !s.graduated) return 'learning';
+  if (s.step !== undefined && s.step !== null && s.graduated) return 'relearning';
+  return 'review';
+}
+
+// Get intervals for the 4 buttons based on current card state
+function getButtonIntervals(id) {
+  const s = getState(id);
+  const phase = getPhase(s);
+  if (phase === 'new' || phase === 'learning') {
+    const step = s.step || 0;
+    return {
+      again: {val:LEARN_STEPS[0], unit:'m'},
+      hard: {val: step < LEARN_STEPS.length-1 ? Math.round((LEARN_STEPS[step]+LEARN_STEPS[step+1])/2) : LEARN_STEPS[step]*2, unit:'m'},
+      good: {val: step < LEARN_STEPS.length-1 ? LEARN_STEPS[step+1] : GRADUATING_INTERVAL, unit: step < LEARN_STEPS.length-1 ? 'm' : 'd'},
+      easy: {val:EASY_INTERVAL, unit:'d'}
+    };
+  }
+  if (phase === 'relearning') {
+    return {
+      again: {val:LEARN_STEPS[0], unit:'m'},
+      hard: {val:Math.round(LEARN_STEPS[0]*2), unit:'m'},
+      good: {val: s.step < LEARN_STEPS.length-1 ? LEARN_STEPS[(s.step||0)+1] : Math.max(1,Math.round(s.interval*0.5)), unit: s.step < LEARN_STEPS.length-1 ? 'm' : 'd'},
+      easy: {val:Math.max(1,s.interval), unit:'d'}
+    };
+  }
+  // Review phase
+  const ease = s.ease || 2.5;
+  const ivl = s.interval || 1;
+  return {
+    again: {val:LEARN_STEPS[0], unit:'m'},
+    hard: {val:Math.max(1,Math.round(ivl*1.2)), unit:'d'},
+    good: {val:Math.max(1,Math.round(ivl*ease)), unit:'d'},
+    easy: {val:Math.max(1,Math.round(ivl*ease*1.3)), unit:'d'}
+  };
+}
+
+function formatInterval(i) {
+  if (i.unit === 'm') return i.val + 'm';
+  if (i.val === 1) return '1d';
+  if (i.val < 30) return i.val + 'd';
+  if (i.val < 365) return Math.round(i.val/30) + 'mo';
+  return (i.val/365).toFixed(1) + 'y';
+}
+
+function srsUpdate(id, grade) {
+  // grade: 'again' | 'hard' | 'good' | 'easy'
+  let s = getState(id);
+  const phase = getPhase(s);
+  const now = Date.now();
+
+  if (grade === 'again') {
+    if (phase === 'review') {
+      // Failed a review → enter relearning
+      s.graduated = true;
+      s.step = 0;
+      s.ease = Math.max(1.3, (s.ease||2.5) - 0.2);
+      s.due = now + LEARN_STEPS[0] * 60000;
+    } else {
+      // Learning/relearning → back to step 0
+      s.step = 0;
+      s.ease = Math.max(1.3, (s.ease||2.5) - 0.2);
+      s.due = now + LEARN_STEPS[0] * 60000;
+    }
+  } else if (grade === 'hard') {
+    if (phase === 'new' || phase === 'learning' || phase === 'relearning') {
+      const step = s.step || 0;
+      const mins = step < LEARN_STEPS.length-1 ? Math.round((LEARN_STEPS[step]+LEARN_STEPS[step+1])/2) : LEARN_STEPS[step]*2;
+      s.due = now + mins * 60000;
+      s.ease = Math.max(1.3, (s.ease||2.5) - 0.15);
+      // Don't advance step
+    } else {
+      // Review — short interval, ease drops
+      s.interval = Math.max(1, Math.round((s.interval||1) * 1.2));
+      s.due = now + s.interval * 86400000;
+      s.ease = Math.max(1.3, (s.ease||2.5) - 0.15);
+    }
+  } else if (grade === 'good') {
+    if (phase === 'new' || phase === 'learning') {
+      const step = s.step || 0;
+      if (step < LEARN_STEPS.length - 1) {
+        // Advance to next learning step
+        s.step = step + 1;
+        s.due = now + LEARN_STEPS[step + 1] * 60000;
+      } else {
+        // Graduate!
+        s.graduated = true;
+        s.step = undefined;
+        s.interval = GRADUATING_INTERVAL;
+        s.reps = 1;
+        s.due = now + GRADUATING_INTERVAL * 86400000;
+      }
+    } else if (phase === 'relearning') {
+      const step = s.step || 0;
+      if (step < LEARN_STEPS.length - 1) {
+        s.step = step + 1;
+        s.due = now + LEARN_STEPS[step + 1] * 60000;
+      } else {
+        // Back to review with reduced interval
+        s.step = undefined;
+        s.interval = Math.max(1, Math.round((s.interval||1) * 0.5));
+        s.due = now + s.interval * 86400000;
+      }
+    } else {
+      // Review — normal interval
+      s.reps = (s.reps||0) + 1;
+      s.interval = Math.max(1, Math.round((s.interval||1) * (s.ease||2.5)));
+      s.due = now + s.interval * 86400000;
+      s.ease = Math.min(3.0, (s.ease||2.5) + 0.05);
+    }
+  } else if (grade === 'easy') {
+    if (phase === 'new' || phase === 'learning') {
+      // Skip all learning steps, graduate immediately
+      s.graduated = true;
+      s.step = undefined;
+      s.interval = EASY_INTERVAL;
+      s.reps = 1;
+      s.due = now + EASY_INTERVAL * 86400000;
+      s.ease = Math.min(3.0, (s.ease||2.5) + 0.15);
+    } else if (phase === 'relearning') {
+      s.step = undefined;
+      s.interval = Math.max(1, s.interval || 1);
+      s.due = now + s.interval * 86400000;
+      s.ease = Math.min(3.0, (s.ease||2.5) + 0.15);
+    } else {
+      // Review — big interval boost
+      s.reps = (s.reps||0) + 1;
+      s.interval = Math.max(1, Math.round((s.interval||1) * (s.ease||2.5) * 1.3));
+      s.due = now + s.interval * 86400000;
+      s.ease = Math.min(3.0, (s.ease||2.5) + 0.15);
+    }
+  }
+
+  // Mark as seen if new
+  if (phase === 'new' && s.step === undefined && grade !== 'again') {
+    // handled above
+  }
+  if (phase === 'new' && s.step === undefined) {
+    s.step = 0; // entered learning
+  }
+
+  setState(id, s);
+}
+
+// ═══════════════════════════════════════════
+//  FUZZY MATCH
+// ═══════════════════════════════════════════
+function normalize(s) {
+  return s.toLowerCase().trim().replace(/[.,!?;:'"()]/g,'').replace(/\s+/g,' ');
+}
+function levenshtein(a, b) {
+  const m=a.length, n=b.length;
+  const dp=Array.from({length:m+1},(_,i)=>Array.from({length:n+1},(_,j)=>i===0?j:j===0?i:0));
+  for(let i=1;i<=m;i++) for(let j=1;j<=n;j++)
+    dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
+  return dp[m][n];
+}
+function autoCheck(typed, correct) {
+  const t = normalize(typed), c = normalize(correct);
+  if (!t) return 'wrong';
+  if (t === c) return 'correct';
+  const tw = t.split(' '), cw = c.split(' ');
+  // Count how many correct-answer words have a close match in the typed answer
+  let matched = 0;
+  let typoOnly = 0; // words that matched but only via fuzzy (typo tolerance)
+  for (const cWord of cw) {
+    // Only allow typo tolerance for words 5+ letters. Short words (kan, på, i, av, etc.) must be exact.
+    const exactMatch = tw.some(tWord => tWord === cWord);
+    if (exactMatch) {
+      matched++;
+      continue;
+    }
+    if (cWord.length >= 5) {
+      const threshold = 1; // allow 1 typo for words with 5+ letters
+      if (tw.some(tWord => tWord.length >= 4 && levenshtein(tWord, cWord) <= threshold)) {
+        matched++;
+        typoOnly++;
+        continue;
+      }
+    }
+  }
+  const ratio = matched / cw.length;
+  // Also check the typed answer doesn't have a bunch of extra words
+  const extraWords = Math.max(0, tw.length - cw.length);
+  const extraPenalty = extraWords > 2 ? 0.15 : extraWords > 0 ? 0.05 : 0;
+  const adjustedRatio = ratio - extraPenalty;
+  // Must match ALL words exactly (with typo tolerance) to be "correct"
+  if (adjustedRatio >= 1.0) return 'correct';
+  // Almost there — one or two words off
+  if (adjustedRatio >= 0.65) return 'close';
+  return 'wrong';
+}
+
+// ═══════════════════════════════════════════
+//  APP STATE
+// ═══════════════════════════════════════════
+let mode = 'en-sv';
+let filterCat = 'all';
+let filterDiff = 'all';
+let queue = [];
+let queueIndex = 0;
+let revealed = false;
+let sessionReviewed = 0;
+
+// Track new cards introduced today
+function getTodayKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+}
+function getNewToday() {
+  return store.newToday || {date:'', count:0};
+}
+function addNewToday() {
+  const key = getTodayKey();
+  if (!store.newToday || store.newToday.date !== key) store.newToday = {date:key, count:0};
+  store.newToday.count++;
+  saveStore(store);
+}
+function newTodayCount() {
+  const nt = getNewToday();
+  return nt.date === getTodayKey() ? nt.count : 0;
+}
+
+function getFilteredCards() {
+  return CARDS.filter(c =>
+    (filterCat === 'all' || c.cat === filterCat) &&
+    (filterDiff === 'all' || c.diff === filterDiff)
+  );
+}
+
+function buildQueue() {
+  const filtered = getFilteredCards();
+  const now = Date.now();
+
+  // 1. Learning / relearning cards that are due (short timers)
+  const learning = filtered.filter(c => {
+    const s = getState(c.id);
+    const phase = getPhase(s);
+    return (phase === 'learning' || phase === 'relearning') && s.due <= now + 30000;
+  });
+
+  // 2. Review cards due today
+  const reviews = filtered.filter(c => {
+    const s = getState(c.id);
+    return getPhase(s) === 'review' && s.due <= now + 60000;
+  });
+
+  // 3. New cards (daily limit)
+  const newRemaining = Math.max(0, NEW_PER_DAY - newTodayCount());
+  const allNew = filtered.filter(c => getPhase(getState(c.id)) === 'new');
+  shuffle(allNew);
+  const newCards = allNew.slice(0, newRemaining);
+
+  shuffle(learning);
+  shuffle(reviews);
+
+  // Anki order: learning first, then reviews interleaved with new
+  return [...learning, ...reviews, ...newCards].map(c => c.id);
+}
+
+function shuffle(arr) {
+  for (let i=arr.length-1;i>0;i--) {
+    const j=Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]]=[arr[j],arr[i]];
+  }
+  return arr;
+}
+
+function rebuildQueue() {
+  queue = buildQueue();
+  queueIndex = 0;
+  sessionReviewed = 0;
+  failedThisSession.clear();
+  document.getElementById('session-end').style.display = 'none';
+  document.getElementById('card-area').style.display = 'block';
+  document.getElementById('controls').style.display = 'flex';
+  if (queue.length === 0) {
+    showSessionEnd();
+  } else {
+    renderCard();
+  }
+}
+
+// ═══════════════════════════════════════════
+//  RENDER
+// ═══════════════════════════════════════════
+const CAT_META = {
+  verb:{label:'Verb Conjugation',cls:'cat-verb'},
+  prep:{label:'Prepositions',cls:'cat-prep'},
+  noun:{label:'Noun Declension',cls:'cat-noun'},
+  word:{label:'Word Order',cls:'cat-word'},
+  idiom:{label:'Idiom',cls:'cat-idiom'},
+  modal:{label:'Modal Verbs',cls:'cat-modal'},
+  cond:{label:'Conditionals',cls:'cat-cond'},
+  part:{label:'Participles',cls:'cat-part'},
+};
+const DIFF_META = {
+  easy:{label:'Easy',cls:'diff-easy'},
+  medium:{label:'Medium',cls:'diff-medium'},
+  hard:{label:'Hard',cls:'diff-hard'},
+};
+
+function currentCard() {
+  if (!queue.length || queueIndex >= queue.length) return null;
+  return CARDS.find(c => c.id === queue[queueIndex]) || null;
+}
+
+function renderCard() {
+  const card = currentCard();
+  if (!card) { showSessionEnd(); return; }
+
+  const cm = CAT_META[card.cat] || {label:card.cat,cls:'cat-verb'};
+  const dm = DIFF_META[card.diff] || {label:'',cls:''};
+
+  document.getElementById('cat-badge').textContent = cm.label;
+  document.getElementById('cat-badge').className = 'card-category ' + cm.cls;
+  document.getElementById('diff-badge').textContent = dm.label;
+  document.getElementById('diff-badge').className = 'diff-badge ' + dm.cls;
+  document.getElementById('prompt-text').textContent = mode === 'sv-en' ? card.sv : card.en;
+
+  revealed = false;
+  const inp = document.getElementById('answer-input');
+  inp.value = '';
+  inp.disabled = false;
+  inp.className = '';
+  document.getElementById('input-section').style.display = 'block';
+  document.getElementById('reveal-section').style.display = 'none';
+  document.getElementById('answer-buttons').style.display = 'none';
+  // Reset speech UI
+  document.getElementById('listening-bar').classList.remove('active');
+  if (isListening && recognition) { recognition.stop(); isListening = false; }
+  const micEl = document.getElementById('mic-btn');
+  if (micEl) micEl.classList.remove('listening');
+
+  document.getElementById('btn-prev').disabled = queueIndex === 0;
+  document.getElementById('btn-next').disabled = queueIndex >= queue.length - 1;
+
+  updateStats();
+  setTimeout(() => inp.focus(), 50);
+}
+
+function updateStats() {
+  const filtered = getFilteredCards();
+  const total = filtered.length;
+  const now = Date.now();
+  let mastered=0, learningCount=0, newCount=0;
+  for (const c of filtered) {
+    const s = getState(c.id);
+    const phase = getPhase(s);
+    if (phase === 'new') newCount++;
+    else if (phase === 'review' && (s.interval||0) >= 21) mastered++;
+    else learningCount++;
+  }
+  const pct = total > 0 ? (mastered / total) * 100 : 0;
+
+  document.getElementById('card-counter').textContent =
+    queue.length ? `Card ${queueIndex+1} of ${queue.length} in queue` : 'No cards in queue';
+
+  const dueReviews = filtered.filter(c => { const s=getState(c.id); return getPhase(s)==='review' && s.due<=now+60000; }).length;
+  const inLearning = filtered.filter(c => { const p=getPhase(getState(c.id)); return p==='learning'||p==='relearning'; }).length;
+  const newAvail = Math.max(0, NEW_PER_DAY - newTodayCount());
+  document.getElementById('queue-info').textContent = `${dueReviews} due · ${inLearning} learning · ${newAvail} new today`;
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('stat-got').textContent = `✓ ${mastered} mastered`;
+  document.getElementById('stat-learn').textContent = `↻ ${learningCount} learning`;
+  document.getElementById('stat-new').textContent = `◯ ${newCount} new`;
+}
+
+// ═══════════════════════════════════════════
+//  INTERACTIONS
+// ═══════════════════════════════════════════
+function checkAnswer() {
+  if (revealed) return;
+  const card = currentCard();
+  if (!card) return;
+
+  const inp = document.getElementById('answer-input');
+  const typed = inp.value.trim();
+  const correct = mode === 'sv-en' ? card.en : card.sv;
+  const result = autoCheck(typed || '', correct);
+
+  // Style input
+  inp.className = result === 'correct' ? 'correct' : result === 'close' ? 'close' : 'wrong';
+  inp.disabled = true;
+
+  // Result banner
+  const rb = document.getElementById('check-result');
+  if (result === 'correct') { rb.textContent = '✓ Correct!'; rb.className = 'check-result correct'; }
+  else if (result === 'close') { rb.textContent = '≈ Almost! Check the details.'; rb.className = 'check-result close'; }
+  else { rb.textContent = '✗ Incorrect.'; rb.className = 'check-result wrong'; }
+
+  document.getElementById('your-answer').textContent = typed || '(no answer)';
+  document.getElementById('correct-answer').textContent = correct;
+  document.getElementById('note-text').textContent = card.note;
+
+  document.getElementById('input-section').style.display = 'none';
+  document.getElementById('reveal-section').style.display = 'flex';
+  document.getElementById('answer-buttons').style.display = 'flex';
+
+  // Show intervals on buttons
+  const ivls = getButtonIntervals(card.id);
+  document.getElementById('ivl-again').textContent = formatInterval(ivls.again);
+  document.getElementById('ivl-hard').textContent = formatInterval(ivls.hard);
+  document.getElementById('ivl-good').textContent = formatInterval(ivls.good);
+  document.getElementById('ivl-easy').textContent = formatInterval(ivls.easy);
+
+  // Log to history
+  addHistory({ cardId:card.id, typed, correct, autoResult:result, timestamp:Date.now() });
+  revealed = true;
+}
+
+function markCard(grade) {
+  // grade: 'again' | 'hard' | 'good' | 'easy'
+  const card = currentCard();
+  if (!card || !revealed) return;
+
+  const wasPhaseBefore = getPhase(getState(card.id));
+  const wasNew = wasPhaseBefore === 'new';
+
+  srsUpdate(card.id, grade);
+
+  // If new card just entered learning, count it
+  if (wasNew) addNewToday();
+
+  // If again/hard on a learning card, re-add to queue so it comes back
+  const phaseAfter = getPhase(getState(card.id));
+  if (phaseAfter === 'learning' || phaseAfter === 'relearning') {
+    // Card is in learning steps — it'll come back when timer fires
+    // Add it back to end of queue if not already there
+    const remaining = queue.slice(queueIndex + 1);
+    if (!remaining.includes(card.id)) {
+      queue.push(card.id);
+    }
+  }
+
+  sessionReviewed++;
+  queueIndex++;
+
+  // Check if any learning cards are now due and re-insert them
+  const now = Date.now();
+  const learningDue = CARDS.filter(c => {
+    const s = getState(c.id);
+    const p = getPhase(s);
+    return (p === 'learning' || p === 'relearning') && s.due <= now + 30000;
+  }).map(c => c.id);
+  // Add any newly due learning cards right after current position
+  for (const lid of learningDue) {
+    if (!queue.slice(queueIndex).includes(lid)) {
+      queue.splice(queueIndex, 0, lid);
+    }
+  }
+
+  if (queueIndex >= queue.length) {
+    // Check if there are learning cards due soon
+    const soonest = findSoonestLearning();
+    if (soonest) {
+      showWaitingScreen(soonest);
+    } else {
+      showSessionEnd();
+    }
+  } else {
+    // Check if current card is a learning card not yet due — skip ahead or wait
+    const nextId = queue[queueIndex];
+    const nextState = getState(nextId);
+    const nextPhase = getPhase(nextState);
+    if ((nextPhase === 'learning' || nextPhase === 'relearning') && nextState.due > Date.now() + 5000) {
+      // This card isn't due yet — check if there's something else to do
+      const laterIdx = queue.findIndex((id, i) => {
+        if (i <= queueIndex) return false;
+        const ss = getState(id);
+        const pp = getPhase(ss);
+        if (pp === 'learning' || pp === 'relearning') return ss.due <= Date.now() + 5000;
+        return true; // new or review cards are always ready
+      });
+      if (laterIdx > -1) {
+        // Swap
+        [queue[queueIndex], queue[laterIdx]] = [queue[laterIdx], queue[queueIndex]];
+      }
+    }
+    renderCard();
+  }
+}
+
+function findSoonestLearning() {
+  const now = Date.now();
+  let soonest = null;
+  for (const c of CARDS) {
+    const s = getState(c.id);
+    const p = getPhase(s);
+    if ((p === 'learning' || p === 'relearning') && s.due > now) {
+      if (!soonest || s.due < soonest.due) soonest = {id:c.id, due:s.due};
+    }
+  }
+  return soonest;
+}
+
+function showWaitingScreen(soonest) {
+  const secs = Math.ceil((soonest.due - Date.now()) / 1000);
+  document.getElementById('card-area').style.display = 'none';
+  document.getElementById('controls').style.display = 'none';
+  document.getElementById('session-end').style.display = 'block';
+  document.getElementById('end-title').textContent = '⏳ Waiting for next card...';
+  document.getElementById('end-subtitle').innerHTML = 'A card is coming back in <strong id="wait-timer">' + secs + '</strong> seconds.';
+  document.getElementById('next-due-list').innerHTML = 'Learning cards need time to sink in. Anki-style!';
+  // Start countdown
+  const timer = setInterval(() => {
+    const remaining = Math.ceil((soonest.due - Date.now()) / 1000);
+    const el = document.getElementById('wait-timer');
+    if (el) el.textContent = Math.max(0, remaining);
+    if (remaining <= 0) {
+      clearInterval(timer);
+      // Rebuild and continue
+      const newQueue = buildQueue();
+      if (newQueue.length > 0) {
+        queue = newQueue;
+        queueIndex = 0;
+        document.getElementById('session-end').style.display = 'none';
+        document.getElementById('card-area').style.display = 'block';
+        document.getElementById('controls').style.display = 'flex';
+        renderCard();
+      } else {
+        showSessionEnd();
+      }
+    }
+  }, 1000);
+}
+
+function nextCard() {
+  if (queueIndex < queue.length - 1) { queueIndex++; renderCard(); }
+}
+function prevCard() {
+  if (queueIndex > 0) { queueIndex--; renderCard(); }
+}
+
+// ═══════════════════════════════════════════
+//  SESSION END
+// ═══════════════════════════════════════════
+function showSessionEnd() {
+  document.getElementById('session-end').style.display = 'block';
+  document.getElementById('card-area').style.display = 'none';
+  document.getElementById('controls').style.display = 'none';
+
+  document.getElementById('end-title').textContent = "Session complete!";
+  document.getElementById('end-subtitle').innerHTML = 'You reviewed <strong>' + sessionReviewed + '</strong> cards this session.';
+
+  // Next due dates
+  const filtered = getFilteredCards();
+  const now = Date.now();
+  const dueBuckets = {};
+  for (const c of filtered) {
+    const s = getState(c.id);
+    const phase = getPhase(s);
+    if (phase === 'new') continue; // skip unseen cards
+    if (phase === 'learning' || phase === 'relearning') continue; // skip in-progress learning
+    const daysUntil = Math.ceil((s.due - now) / 86400000);
+    if (daysUntil <= 0) continue;
+    const key = daysUntil === 1 ? 'tomorrow' : `in ${daysUntil} days`;
+    dueBuckets[key] = (dueBuckets[key] || 0) + 1;
+  }
+  const newRemaining = filtered.filter(c => getPhase(getState(c.id)) === 'new').length;
+  const inLearning = filtered.filter(c => { const p = getPhase(getState(c.id)); return p === 'learning' || p === 'relearning'; }).length;
+  let html = '';
+  for (const [when, count] of Object.entries(dueBuckets).sort()) {
+    html += `• ${count} card${count>1?'s':''} due ${when}<br>`;
+  }
+  if (inLearning > 0) html += `• ${inLearning} card${inLearning>1?'s':''} still in learning steps<br>`;
+  if (newRemaining > 0) html += `• ${newRemaining} new card${newRemaining>1?'s':''} still to learn`;
+  if (!html) html = 'All cards are up to date!';
+  document.getElementById('next-due-list').innerHTML = html;
+  updateStats();
+}
+
+function continueAnyway() {
+  // Load learning cards, future reviews, or more new cards (bypasses daily limit)
+  const filtered = getFilteredCards();
+  const now = Date.now();
+  // 1. Learning/relearning cards (even if not yet due)
+  const learning = filtered.filter(c => {
+    const p = getPhase(getState(c.id));
+    return p === 'learning' || p === 'relearning';
+  });
+  // 2. Review cards due in the future (next few days)
+  const futureReviews = filtered.filter(c => {
+    const s = getState(c.id);
+    return getPhase(s) === 'review' && s.due > now;
+  });
+  // 3. New cards (bypass daily limit for continue)
+  const newCards = filtered.filter(c => getPhase(getState(c.id)) === 'new').slice(0, 20);
+  const extra = [...learning, ...futureReviews, ...newCards];
+  if (!extra.length) return;
+  shuffle(extra);
+  queue = extra.map(c => c.id);
+  queueIndex = 0;
+  sessionReviewed = 0;
+  failedThisSession.clear();
+  document.getElementById('session-end').style.display = 'none';
+  document.getElementById('card-area').style.display = 'block';
+  document.getElementById('controls').style.display = 'flex';
+  renderCard();
+}
+
+// ═══════════════════════════════════════════
+//  EXPORT
+// ═══════════════════════════════════════════
+function exportProgress() {
+  const data = JSON.stringify({
+    exportDate: new Date().toISOString(),
+    cardStates: store.cardStates,
+    history: store.history,
+    totalCards: CARDS.length,
+  }, null, 2);
+  const blob = new Blob([data], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `swedish_fc_progress_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+}
+
+// ═══════════════════════════════════════════
+//  FILTER / MODE
+// ═══════════════════════════════════════════
+// setCat and setDiff removed — category buttons now open review overlays
+function setMode(m) {
+  mode = m;
+  const btnEnSv = document.getElementById('btn-en-sv');
+  if (btnEnSv) btnEnSv.classList.toggle('active', m==='en-sv');
+  renderCard();
+}
+
+// ═══════════════════════════════════════════
+//  KEYBOARD
+// ═══════════════════════════════════════════
+document.addEventListener('keydown', e => {
+  // Close review overlay on Escape
+  if (e.key === 'Escape') { closeReview(); return; }
+  // Don't handle keys when overlay is open
+  if (document.getElementById('review-overlay').style.display === 'flex') return;
+  const inp = document.getElementById('answer-input');
+  if (document.activeElement === inp) {
+    if (e.key === 'Enter') { e.preventDefault(); checkAnswer(); }
+    return;
+  }
+  if (e.key === 'ArrowRight') nextCard();
+  else if (e.key === 'ArrowLeft') prevCard();
+  else if (e.key === ' ') { e.preventDefault(); if (!revealed) inp.focus(); }
+  else if (e.key === '1' && revealed) markCard('again');
+  else if (e.key === '2' && revealed) markCard('hard');
+  else if (e.key === '3' && revealed) markCard('good');
+  else if (e.key === '4' && revealed) markCard('easy');
+});
+
+// ═══════════════════════════════════════════
+//  STREAK
+// ═══════════════════════════════════════════
+function dayKey(ts) {
+  const d = new Date(ts);
+  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+}
+
+function calcStreak() {
+  const days = new Set(store.history.map(h => dayKey(h.timestamp)));
+  let streak = 0;
+  const cursor = new Date();
+  // Check from today backwards; if today has no entries yet, allow yesterday to still count
+  while (true) {
+    if (days.has(dayKey(cursor.getTime()))) {
+      streak++;
+      cursor.setDate(cursor.getDate() - 1);
+    } else if (streak === 0) {
+      // No activity today — try yesterday before giving up
+      cursor.setDate(cursor.getDate() - 1);
+      if (days.has(dayKey(cursor.getTime()))) {
+        streak++;
+        cursor.setDate(cursor.getDate() - 1);
+      } else {
+        break;
+      }
+    } else {
+      break;
+    }
+  }
+  return streak;
+}
+
+function updateStreak() {
+  const n = calcStreak();
+  document.getElementById('streak-num').textContent = n;
+  const badge = document.getElementById('streak-badge');
+  badge.classList.toggle('zero', n === 0);
+  // Update flame emoji based on streak length
+  const flame = n === 0 ? '❄️' : n >= 30 ? '🔥🔥' : '🔥';
+  badge.firstChild.textContent = flame + ' ';
+}
+
+// ═══════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════
+updateStreak();
+rebuildQueue();
+// ═══════════════════════════════════════════
+//  CATEGORY REVIEW OVERLAY
+// ═══════════════════════════════════════════
+const CATEGORY_INFO = {
+  verb: {
+    title: 'Verbs',
+    rules: [
+      'Swedish verbs don\'t change for person — "jag springer, du springer, hon springer" — always the same.',
+      'Past tense (preterite) vs perfect (supine) trip people up. Preterite = standalone past: "Jag sprang." Supine = always with har/hade: "Jag har sprungit."',
+      'Group 1 (-ar verbs) are regular: talar → talade → har talat. Groups 2-4 have irregulars you just have to memorize.'
+    ],
+    examples: [
+      {sv:'pratade', en:'talked (preterite)', note:'Group 1: pratar → pratade → har pratat'},
+      {sv:'har sprungit', en:'has run (supine)', note:'Irregular: springer → sprang → har sprungit'},
+      {sv:'brukade', en:'used to', note:'"Han brukade jogga" = he used to jog. Always preterite.'}
+    ]
+  },
+  prep: {
+    title: 'Prepositions',
+    rules: [
+      'Swedish prepositions don\'t translate 1:1 from English. You have to learn which preposition goes with which adjective or verb — it\'s just memorization.',
+      'The "adj + prep" combos are the big ones: sugen på, bra på, rädd för, intresserad av, nöjd med, van vid.',
+      'The "på att" / "för att" / "i att" constructions: "bra på att laga mat" = good at cooking, "rädd för att misslyckas" = afraid of failing.'
+    ],
+    examples: [
+      {sv:'sugen på', en:'craving / in the mood for', note:'"Sugen på glass?" = feeling like ice cream?'},
+      {sv:'bra på att', en:'good at (doing)', note:'"Hon är bra på att laga mat" = she\'s good at cooking'},
+      {sv:'van vid', en:'used to / accustomed to', note:'"Jag är van vid kylan" = I\'m used to the cold'}
+    ]
+  },
+  noun: {
+    title: 'Nouns',
+    rules: [
+      'Swedish has two genders: en-words (common) and ett-words (neuter). There\'s no rule — you just learn which is which.',
+      'Definite form = add the ending: en hund → hunden, ett hus → huset. No separate "the" word.',
+      'Plurals have 5 patterns. Most common: -or (en flicka → flickor), -ar (en bil → bilar), -er (en telefon → telefoner).'
+    ],
+    examples: [
+      {sv:'hunden', en:'the dog', note:'en hund → hunden (definite -en ending)'},
+      {sv:'huset', en:'the house', note:'ett hus → huset (definite -et ending)'},
+      {sv:'två bilar', en:'two cars', note:'en bil → bilar (plural -ar)'}
+    ]
+  },
+  word: {
+    title: 'Word Order',
+    rules: [
+      'Swedish is a V2 language: the verb MUST be in second position in main clauses. "Idag äter jag pasta" — not "Idag jag äter."',
+      'In subclauses (att, om, när, som, etc.), "inte" goes BEFORE the verb: "Hon sa att hon inte gillar det."',
+      'After conjunctions like och/men/eller, word order stays normal. After adverbs at the start, the subject flips: "Sedan gick han hem."'
+    ],
+    examples: [
+      {sv:'Idag äter jag hemma.', en:'Today I\'m eating at home.', note:'V2: verb "äter" in second position, subject flips after "idag"'},
+      {sv:'Hon sa att hon inte kommer.', en:'She said she\'s not coming.', note:'Subclause: "inte" before verb "kommer"'},
+      {sv:'Sedan gick vi hem.', en:'Then we went home.', note:'Adverb first → subject-verb inversion'}
+    ]
+  },
+  idiom: {
+    title: 'Phrases & Expressions',
+    rules: [
+      'These are the phrases Swedes actually use every day in conversation. They\'re not fancy idioms — they\'re the bread and butter of spoken Swedish.',
+      'Many use verbs like "köra" (drive/go), "fixa" (sort out), "hänga" (hang out), and "dra" (leave) in ways you won\'t find in textbooks.',
+      'Filler words like "typ", "liksom", "alltså", "ju", and "väl" are essential to sounding natural. They soften statements and signal tone.'
+    ],
+    examples: [
+      {sv:'Det är lugnt.', en:'It\'s cool. / No worries.', note:'One of the most used phrases in Swedish. Works for everything.'},
+      {sv:'Jag orkar inte.', en:'I can\'t be bothered.', note:'"Orka" = to have the energy for. Extremely common.'},
+      {sv:'Typ', en:'Like / kind of / sort of', note:'Filler word used constantly: "det var typ bra" = it was like, pretty good'}
+    ]
+  },
+  modal: {
+    title: 'Modal Verbs',
+    rules: [
+      'The big five: kan (can), ska (will/shall), måste (must), får (may/get to), bör (should). They\'re followed by the infinitive without "att".',
+      '"Ska" can mean both future ("jag ska äta" = I\'m going to eat) and obligation ("du ska inte göra det" = you shouldn\'t do that).',
+      '"Får" is tricky: "du får göra det" = you\'re allowed to, but "jag fick vänta" = I had to wait. Context changes meaning.'
+    ],
+    examples: [
+      {sv:'Du borde vila.', en:'You should rest.', note:'"Borde" = should (past tense of bör, but used for present advice)'},
+      {sv:'Du får inte göra det.', en:'You\'re not allowed to do that.', note:'"Får inte" = must not / not allowed to'},
+      {sv:'Jag måste gå nu.', en:'I have to go now.', note:'"Måste" never changes form. Same in past: "jag måste gå" (context tells tense)'}
+    ]
+  },
+  cond: {
+    title: 'Conditionals',
+    rules: [
+      'Swedish conditionals work like English: "Om jag hade pengar, skulle jag resa" = If I had money, I would travel.',
+      '"Om + past tense" in the if-clause, "skulle + infinitive" in the result clause. Same as English "if I had... I would..."',
+      'For unreal past: "Om jag hade vetat, skulle jag ha sagt något" = If I had known, I would have said something.'
+    ],
+    examples: [
+      {sv:'Om jag vore du...', en:'If I were you...', note:'"Vore" = were (subjunctive of "vara"). Sounds natural, not formal.'},
+      {sv:'Skulle du kunna hjälpa mig?', en:'Could you help me?', note:'Polite request form with "skulle"'},
+      {sv:'Om vi hade bokat i förväg...', en:'If we had booked in advance...', note:'Unreal past: "hade + supine" in the om-clause'}
+    ]
+  },
+  part: {
+    title: 'Particle Verbs',
+    rules: [
+      'Swedish has tons of verbs where a small word (particle) completely changes the meaning: "stänga" = close, "stänga av" = turn off, "stänga in" = lock in.',
+      'The particle usually goes right after the verb: "Stäng av datorn" = turn off the computer. In subclauses it sticks with the verb.',
+      'Common particles: av (off), på (on), upp (up), ner (down), ut (out), in (in), ihop (together), isär (apart).'
+    ],
+    examples: [
+      {sv:'Sätt på musiken!', en:'Turn on the music!', note:'"Sätta på" = turn on. "Sätta" alone = to put/place.'},
+      {sv:'Vi drog iväg.', en:'We headed off.', note:'"Dra iväg" = to take off / leave. "Dra" alone = to pull.'},
+      {sv:'Hon kom på det.', en:'She figured it out.', note:'"Komma på" = to come up with / realize. Totally different from "komma" alone.'}
+    ]
+  }
+};
+
+function showReview(cat) {
+  const info = CATEGORY_INFO[cat];
+  if (!info) return;
+  // Pick 3 random cards from this category
+  const catCards = CARDS.filter(c => c.cat === cat);
+  shuffle(catCards);
+  const samples = catCards.slice(0, 3);
+  const meta = CAT_META[cat] || {cls:'cat-verb'};
+
+  let html = '<div class="review-overlay-inner">';
+  html += '<button class="review-close" onclick="closeReview()">&times;</button>';
+  html += '<h2 class="review-title"><span class="card-category ' + meta.cls + '">' + info.title + '</span></h2>';
+
+  // Rules
+  html += '<div class="review-section"><div class="review-section-label">How it works</div>';
+  info.rules.forEach(r => { html += '<p class="review-rule">' + r + '</p>'; });
+  html += '</div>';
+
+  // Key examples
+  html += '<div class="review-section"><div class="review-section-label">Key patterns</div>';
+  info.examples.forEach(ex => {
+    html += '<div class="review-example"><div class="review-ex-sv">' + ex.sv + '</div><div class="review-ex-en">' + ex.en + '</div><div class="review-ex-note">' + ex.note + '</div></div>';
+  });
+  html += '</div>';
+
+  // Sample cards
+  html += '<div class="review-section"><div class="review-section-label">Sample cards from your deck</div>';
+  samples.forEach(c => {
+    html += '<div class="review-card"><div class="review-card-sv">' + c.sv + '</div><div class="review-card-en">' + c.en + '</div></div>';
+  });
+  html += '</div></div>';
+
+  const overlay = document.getElementById('review-overlay');
+  overlay.innerHTML = html;
+  overlay.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeReview() {
+  document.getElementById('review-overlay').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+// ═══════════════════════════════════════════
+//  SPEECH RECOGNITION
+// ═══════════════════════════════════════════
+const SpeechRec = window.webkitSpeechRecognition || window.SpeechRecognition || null;
+let recognition = null;
+let isListening = false;
+
+function initSpeech() {
+  const micBtn = document.getElementById('mic-btn');
+  if (!SpeechRec) {
+    // Browser doesn't support it — hide mic, show message
+    micBtn.classList.add('no-support');
+    return;
+  }
+  recognition = new SpeechRec();
+  recognition.continuous = false;
+  recognition.interimResults = true;
+  recognition.lang = 'sv-SE';
+  recognition.maxAlternatives = 1;
+
+  recognition.onresult = function(event) {
+    let transcript = '';
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      transcript = event.results[i][0].transcript;
+    }
+    document.getElementById('recognized-text').textContent = transcript;
+    document.getElementById('answer-input').value = transcript;
+  };
+
+  recognition.onend = function() {
+    isListening = false;
+    document.getElementById('mic-btn').classList.remove('listening');
+    // If we got text, auto-check after a short delay
+    const inp = document.getElementById('answer-input');
+    if (inp.value.trim() && !revealed) {
+      setTimeout(function() {
+        // Keep the listening bar visible briefly so user sees what was heard
+        checkAnswer();
+        // Hide listening bar after showing result
+        setTimeout(function() {
+          document.getElementById('listening-bar').classList.remove('active');
+        }, 1500);
+      }, 600);
+    } else {
+      setTimeout(function() {
+        document.getElementById('listening-bar').classList.remove('active');
+      }, 1200);
+    }
+  };
+
+  recognition.onerror = function(event) {
+    isListening = false;
+    document.getElementById('mic-btn').classList.remove('listening');
+    const msgs = {
+      'no-speech': 'No speech detected — try again',
+      'audio-capture': 'No microphone found',
+      'not-allowed': 'Microphone access denied — check browser settings',
+      'network': 'Network error',
+      'aborted': ''
+    };
+    const msg = msgs[event.error] || 'Error: ' + event.error;
+    if (msg) {
+      document.getElementById('recognized-text').textContent = msg;
+      setTimeout(function() {
+        document.getElementById('listening-bar').classList.remove('active');
+      }, 2500);
+    } else {
+      document.getElementById('listening-bar').classList.remove('active');
+    }
+  };
+}
+
+function toggleMic() {
+  if (!recognition) {
+    // Show unsupported message briefly
+    const el = document.getElementById('speech-unsupported');
+    el.style.display = 'block';
+    setTimeout(function() { el.style.display = 'none'; }, 4000);
+    return;
+  }
+  if (revealed) return; // Don't listen after answer is shown
+
+  if (isListening) {
+    recognition.stop();
+    isListening = false;
+    document.getElementById('mic-btn').classList.remove('listening');
+    document.getElementById('listening-bar').classList.remove('active');
+    return;
+  }
+
+  // Start listening
+  isListening = true;
+  document.getElementById('mic-btn').classList.add('listening');
+  document.getElementById('listening-bar').classList.add('active');
+  document.getElementById('recognized-text').textContent = 'Listening...';
+  document.getElementById('answer-input').value = '';
+
+  try {
+    recognition.start();
+  } catch(e) {
+    // Already started — stop and restart
+    recognition.stop();
+    setTimeout(function() {
+      try { recognition.start(); } catch(e2) { /* give up */ }
+    }, 200);
+  }
+}
+
+// Init speech on page load
+initSpeech();
+
+</script>
+
+<!-- Review overlay -->
+<div class="review-overlay" id="review-overlay" onclick="if(event.target===this)closeReview()"></div>
+
+</body>
+</html>
