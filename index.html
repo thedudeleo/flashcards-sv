@@ -56,6 +56,7 @@ header h1{font-size:1.3rem;font-weight:700;flex:1}
 #answer-input.wrong{border-color:#dc2626;background:#fef2f2}
 #answer-input:disabled{opacity:.7}
 .btn-check{padding:.75rem 1.4rem;background:#006AA7;color:white;border:none;border-radius:11px;font-size:.95rem;font-weight:700;cursor:pointer;white-space:nowrap;transition:all .14s}
+.check-short{display:none}
 .btn-check:hover{background:#005a8e;transform:translateY(-1px)}
 .reveal-section{display:none;flex-direction:column;gap:1rem}
 .check-result{font-size:1rem;font-weight:700;padding:.5rem .9rem;border-radius:9px;text-align:center}
@@ -171,7 +172,8 @@ button,input[type="text"]{min-height:44px}
   .input-row{gap:.45rem}
   #answer-input{padding:.7rem .85rem;font-size:1rem;border-radius:10px}
   .btn-check{padding:.7rem 1rem;font-size:.88rem;border-radius:10px}
-  .btn-mic{padding:.65rem;min-width:44px;min-height:44px;border-radius:10px;font-size:1rem}
+  .check-full{display:none}.check-short{display:inline}
+  .btn-mic{padding:.65rem;min-width:44px;min-height:44px;border-radius:10px;font-size:1rem;flex-shrink:1}
   .answer-compare{grid-template-columns:1fr;gap:.5rem}
   .controls{padding:0 .85rem;margin:.6rem auto 1.5rem;gap:.55rem}
   .answer-buttons{gap:.4rem;flex-wrap:wrap}
@@ -199,6 +201,8 @@ button,input[type="text"]{min-height:44px}
   .prompt-text{font-size:1.05rem}
   .card{padding:1.1rem .95rem}
   .answer-buttons .btn{font-size:.78rem;padding:.6rem .35rem}
+  .input-row{gap:.3rem}
+  .btn-check{padding:.65rem .5rem}
 }
 
 /* ═══ GRAMMAR MENU BUTTON (mobile only) ═══ */
@@ -300,7 +304,7 @@ button,input[type="text"]{min-height:44px}
         <input type="text" id="answer-input" placeholder="Type or tap 🎤"
           autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" inputmode="text"/>
         <button class="btn-mic" id="mic-btn" onclick="toggleMic()" aria-label="Speak your answer">🎤</button>
-        <button class="btn-check" onclick="checkAnswer()">Check →</button>
+        <button class="btn-check" onclick="checkAnswer()"><span class="check-full">Check →</span><span class="check-short">✓</span></button>
       </div>
       <div class="listening-bar" id="listening-bar">
         <span class="listening-dot"></span>
@@ -1677,6 +1681,7 @@ function closeReview() {
 const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition || null;
 let recognition = null;
 let isListening = false;
+let micPermissionGranted = false;
 
 function initSpeech() {
   if (!SpeechRec) {
@@ -1684,7 +1689,41 @@ function initSpeech() {
   }
 }
 
-function toggleMic() {
+// Request mic permission explicitly — required on iOS Safari
+// where SpeechRecognition.start() fails silently without a
+// prior getUserMedia grant.
+async function ensureMicPermission() {
+  if (micPermissionGranted) return true;
+
+  // Try Permissions API first (fast, no prompt if already granted)
+  if (navigator.permissions && navigator.permissions.query) {
+    try {
+      const status = await navigator.permissions.query({ name: 'microphone' });
+      if (status.state === 'granted') {
+        micPermissionGranted = true;
+        return true;
+      }
+    } catch(e) { /* not supported on Safari — fall through */ }
+  }
+
+  // Call getUserMedia to trigger the browser permission dialog
+  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Stop immediately — SpeechRecognition handles its own audio
+      stream.getTracks().forEach(function(t) { t.stop(); });
+      micPermissionGranted = true;
+      return true;
+    } catch(e) {
+      return false;
+    }
+  }
+
+  // No getUserMedia — let recognition.start() try on its own
+  return true;
+}
+
+async function toggleMic() {
   if (!SpeechRec) {
     const el = document.getElementById('speech-unsupported');
     el.style.display = 'block';
@@ -1700,6 +1739,27 @@ function toggleMic() {
     document.getElementById('listening-bar').classList.remove('active');
     return;
   }
+
+  // Show listening UI immediately so tap feels responsive
+  isListening = true;
+  document.getElementById('mic-btn').classList.add('listening');
+  document.getElementById('listening-bar').classList.add('active');
+  document.getElementById('recognized-text').textContent = 'Requesting mic access...';
+  document.getElementById('answer-input').value = '';
+
+  // Ensure mic permission (triggers iOS permission dialog on first use)
+  const permitted = await ensureMicPermission();
+  if (!permitted) {
+    document.getElementById('recognized-text').textContent = 'Microphone access denied — check browser settings';
+    setTimeout(function() {
+      document.getElementById('listening-bar').classList.remove('active');
+    }, 2500);
+    isListening = false;
+    document.getElementById('mic-btn').classList.remove('listening');
+    return;
+  }
+
+  document.getElementById('recognized-text').textContent = 'Listening...';
 
   // Create a fresh instance each time — required for iOS Safari
   recognition = new SpeechRec();
@@ -1738,6 +1798,7 @@ function toggleMic() {
   recognition.onerror = function(event) {
     isListening = false;
     document.getElementById('mic-btn').classList.remove('listening');
+    if (event.error === 'not-allowed') micPermissionGranted = false;
     const msgs = {
       'no-speech': 'No speech detected — try again',
       'audio-capture': 'No microphone found',
@@ -1755,12 +1816,6 @@ function toggleMic() {
       document.getElementById('listening-bar').classList.remove('active');
     }
   };
-
-  isListening = true;
-  document.getElementById('mic-btn').classList.add('listening');
-  document.getElementById('listening-bar').classList.add('active');
-  document.getElementById('recognized-text').textContent = 'Listening...';
-  document.getElementById('answer-input').value = '';
 
   try {
     recognition.start();
